@@ -1,6 +1,7 @@
 // CU-09 Cargar y Auditar Ticket de Compra vía OCR.
 import { h, icon, clear } from '../ui/dom.js';
-import { pageHeader, card, toast, steps, field, setBusy } from '../ui/components.js';
+import { pageHeader, card, toast, steps, field, setBusy, empty } from '../ui/components.js';
+import { HELP } from '../ui/help.js';
 import { pickProduct } from '../ui/picker.js';
 import * as UD from '../core/userdata.js';
 import * as Cat from '../data/catalog.js';
@@ -8,12 +9,14 @@ import * as OCR from '../core/ocr.js';
 import { interpret } from '../core/nlp.js';
 import { money } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
-import { addPoints, POINT_RULES } from '../app/session.js';
+import { addPoints, POINT_RULES, collabLevel } from '../app/session.js';
 import * as Alerts from '../app/alerts.js';
 
 export async function render() {
+  if (collabLevel() < 1)
+    return h('div', { class: 'page' }, pageHeader('Cargar ticket', { help: HELP.ticket }), empty('shield', 'Función para Colaboradores', 'Cargar tickets es una tarea de Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-09 · precondición'));
   const stage = h('div');
-  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos' }), stage, steps('CU-09 · pasos 1–8 · A-1 · E-1 · E-2'));
+  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos', help: HELP.ticket }), stage, steps('CU-09 · pasos 1–8 · A-1 · E-1 · E-2'));
   const hasOcr = await OCR.ocrAvailable();
 
   // Paso 1

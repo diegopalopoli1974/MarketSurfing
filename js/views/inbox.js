@@ -1,4 +1,5 @@
 // Bandeja de avisos (notificaciones de alertas, CU-02 paso 9).
+import { HELP } from '../ui/help.js';
 import { h, icon } from '../ui/dom.js';
 import { pageHeader, empty } from '../ui/components.js';
 import * as UD from '../core/userdata.js';
@@ -9,7 +10,7 @@ export async function render({ rerender }) {
   const view = h(
     'div',
     { class: 'page' },
-    pageHeader('Avisos recibidos', { actions: items.length ? h('button', { class: 'btn btn-ghost btn-sm', onclick: async () => {
+    pageHeader('Avisos recibidos', { help: HELP.inbox, actions: items.length ? h('button', { class: 'btn btn-ghost btn-sm', onclick: async () => {
       act.inbox = [];
       await UD.save('activity');
       window.dispatchEvent(new CustomEvent('ms:inbox'));

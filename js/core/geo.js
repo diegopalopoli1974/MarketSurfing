@@ -1,5 +1,5 @@
 // Ubicación: GPS en el momento o ingreso manual. Las coordenadas viven sólo en memoria (RNF-03).
-import { BARRIOS } from '../data/demo-seed.js';
+import { BARRIOS, ZONES_EXTRA } from '../data/demo-seed.js';
 
 export function distanceKm(a, b) {
   const R = 6371;
@@ -38,6 +38,7 @@ export function gpsPosition({ highAccuracy = true, timeout = 15000 } = {}) {
 // Lugares disponibles sin conexión para el ingreso manual
 const PLACES = [
   ...BARRIOS.map(([name, lat, lng]) => ({ name: `${name}, CABA`, lat, lng })),
+  ...ZONES_EXTRA.map(([name, lat, lng, dep]) => ({ name: dep === 'CABA' ? `${name}, CABA` : `${name}, ${dep} (Bs. As.)`, lat, lng })),
   { name: 'Retiro, CABA', lat: -34.5915, lng: -58.3747 },
   { name: 'Microcentro, CABA', lat: -34.6037, lng: -58.3816 },
   { name: 'Puerto Madero, CABA', lat: -34.6118, lng: -58.3628 },
@@ -79,17 +80,73 @@ export function searchPlacesOffline(q) {
   return PLACES.filter((p) => norm(p.name).includes(n)).slice(0, 10);
 }
 
-/** Búsqueda de dirección en línea (opcional) con Nominatim/OpenStreetMap. */
+async function getJson(url) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 9000);
+  try {
+    const res = await fetch(url, { referrerPolicy: 'no-referrer', credentials: 'omit', signal: ctl.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/** Georef (Gobierno de Argentina): normaliza calle + altura con interpolación de numeración. */
+async function georef(direccion, lugar) {
+  const bases = ['https://apis.datos.gob.ar/georef/api/v2.0/direcciones', 'https://apis.datos.gob.ar/georef/api/direcciones'];
+  const filtros = lugar ? [{ localidad_censal: lugar }, { localidad: lugar }, { departamento: lugar }, { municipio: lugar }] : [{}];
+  for (const base of bases) {
+    for (const f of filtros) {
+      const qs = new URLSearchParams({ direccion, max: '5', ...f });
+      const data = await getJson(`${base}?${qs}`);
+      const list = (data?.direcciones || [])
+        .map((d) => {
+          const lat = Number(d.ubicacion?.lat);
+          const lng = Number(d.ubicacion?.lon);
+          const loc = d.localidad_censal?.nombre || d.departamento?.nombre || '';
+          const name = d.nomenclatura || [d.calle?.nombre, d.altura?.valor, loc].filter(Boolean).join(' ');
+          return { name: String(name).slice(0, 90), lat, lng };
+        })
+        .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng) && d.lat !== 0);
+      if (list.length) return list;
+      if (data) break; // el servicio respondió sin resultados con este filtro: probar el siguiente
+    }
+  }
+  return [];
+}
+
+async function nominatim(params) {
+  const qs = new URLSearchParams({ format: 'jsonv2', limit: '5', countrycodes: 'ar', 'accept-language': 'es', ...params });
+  const data = await getJson(`https://nominatim.openstreetmap.org/search?${qs}`);
+  return (data || [])
+    .map((d) => ({ name: String(d.display_name).split(',').slice(0, 4).join(','), lat: Number(d.lat), lng: Number(d.lon) }))
+    .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+}
+
+/**
+ * Búsqueda de dirección en línea: primero Georef (direcciones argentinas con altura),
+ * luego OpenStreetMap/Nominatim con distintas variantes. Ej.: «Bouchard 2855, Caseros».
+ */
 export async function searchAddressOnline(q) {
   if (!navigator.onLine) throw new Error('Sin conexión: elegí un barrio o localidad de la lista');
-  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ar&accept-language=es&q=${encodeURIComponent(q.slice(0, 120))}`;
-  const res = await fetch(url, { referrerPolicy: 'no-referrer', credentials: 'omit' });
-  if (!res.ok) throw new Error('El servicio de direcciones no respondió');
-  const data = await res.json();
-  return data
-    .filter((d) => d.lat && d.lon)
-    .map((d) => ({ name: String(d.display_name).split(',').slice(0, 3).join(','), lat: Number(d.lat), lng: Number(d.lon) }))
-    .filter((d) => Number.isFinite(d.lat) && Number.isFinite(d.lng));
+  const text = String(q).trim().slice(0, 120);
+  const [first, ...rest] = text.split(',').map((x) => x.trim()).filter(Boolean);
+  const lugar = rest.join(' ').replace(/\b(bs\.? ?as\.?|buenos aires|argentina|caba)\b/gi, '').trim();
+  let r = await georef(first, lugar || null);
+  if (!r.length && lugar) r = await georef(`${first} ${lugar}`, null);
+  if (r.length) return r;
+  const m = first.match(/^(.*?)(\d{1,5})\s*$/);
+  if (m && lugar) r = await nominatim({ street: `${m[2]} ${m[1].trim()}`, city: lugar, country: 'Argentina' });
+  if (!r.length) r = await nominatim({ q: `${text}${/argentina/i.test(text) ? '' : ', Buenos Aires, Argentina'}` });
+  if (!r.length && m) {
+    // última opción: la calle sin altura (ubicación aproximada)
+    r = (await nominatim({ q: `${m[1].trim()}${lugar ? `, ${lugar}` : ''}, Argentina` })).map((x) => ({ ...x, name: `${x.name} (aprox., sin altura)` }));
+  }
+  if (!r.length) throw new Error('No se encontró la dirección. Probá «calle altura, localidad» (ej.: Bouchard 2855, Caseros).');
+  return r;
 }
 
 export const DEFAULT_POINT = { lat: -34.6037, lng: -58.4316, label: 'Caballito / Almagro (CABA)', source: 'manual' };

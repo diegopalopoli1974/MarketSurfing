@@ -1,4 +1,5 @@
 // CU-01 Gestionar Listas de Compras (extendido por CU-05 Sustituir Marca en Lista).
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, modal, confirmDialog, steps } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
@@ -17,7 +18,7 @@ export async function render({ params, query, rerender }) {
   return h(
     'div',
     { class: 'page' },
-    pageHeader('Mis listas', { subtitle: 'Cada cambio se guarda como una nueva versión', actions: h('a', { class: 'btn btn-primary', href: '#/listas/nueva' }, icon('plus'), 'Nueva') }),
+    pageHeader('Mis listas', { subtitle: 'Cada cambio se guarda como una nueva versión', help: HELP.lists, actions: h('a', { class: 'btn btn-primary', href: '#/listas/nueva' }, icon('plus'), 'Nueva') }),
     lists.length
       ? h(
           'ul',
@@ -31,7 +32,7 @@ export async function render({ params, query, rerender }) {
               h(
                 'div',
                 { class: 'row-actions' },
-                h('a', { class: 'btn btn-ghost btn-sm', href: `#/buscar?lista=${l.id}` }, icon('wave', { size: 18 }), 'Optimizar'),
+                h('a', { class: 'btn btn-ghost btn-sm', href: `#/buscar?lista=${l.id}`, 'data-tip': 'Buscar dónde y cuándo conviene comprar esta lista' }, icon('wave', { size: 18 }), 'Optimizar'),
                 h('button', {
                   class: 'icon-btn',
                   'aria-label': `Eliminar ${v.name}`,
@@ -91,7 +92,7 @@ function editor(listId, rerender) {
             h('button', { class: 'icon-btn', 'aria-label': 'Restar', onclick: () => ((it.qty = Math.max(1, it.qty - 1)), (qty.value = it.qty), refreshEstimate()) }, '−'),
             qty,
             h('button', { class: 'icon-btn', 'aria-label': 'Sumar', onclick: () => ((it.qty = Math.min(99, it.qty + 1)), (qty.value = it.qty), refreshEstimate()) }, '+'),
-            Cat.productsByGeneric(it.generic).length > 1 ? h('button', { class: 'btn btn-ghost btn-sm', onclick: () => changeBrand(it) }, icon('swap', { size: 18 }), 'Cambiar marca') : null,
+            Cat.productsByGeneric(it.generic).length > 1 ? h('button', { class: 'btn btn-ghost btn-sm', 'data-tip': 'Reemplazar por otra marca equivalente (CU-05)', onclick: () => changeBrand(it) }, icon('swap', { size: 18 }), 'Cambiar marca') : null,
             h('button', { class: 'icon-btn', 'aria-label': 'Quitar', onclick: () => (draft.splice(idx, 1), renderItems(), refreshEstimate()) }, icon('trash', { size: 20 }))
           )
         )
@@ -149,10 +150,10 @@ function editor(listId, rerender) {
   return h(
     'div',
     { class: 'page' },
-    pageHeader(list ? 'Editar lista' : 'Nueva lista', { back: '#/listas' }),
+    pageHeader(list ? 'Editar lista' : 'Nueva lista', { back: '#/listas', help: HELP.lists }),
     card(
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Nombre'), nameInput),
-      h('div', { class: 'row space' }, h('h2', { class: 'h3' }, 'Productos'), h('button', { class: 'btn btn-secondary', onclick: async () => {
+      h('div', { class: 'row space' }, h('h2', { class: 'h3' }, 'Productos'), h('button', { class: 'btn btn-secondary', 'data-tip': 'Buscá por nombre, marca, categoría o código de barras', onclick: async () => {
         const r = await pickProduct({});
         if (!r) return;
         const existing = draft.find((d) => d.generic === r.generic && (d.productId || null) === r.productId);

@@ -72,6 +72,65 @@ const G = [
   ['manzana-kg', 'Manzana roja', 'Frescos', '1 kg', 1, 'kg', 2900, [['Sin marca', 1.0]]],
   ['carne-picada-kg', 'Carne picada común', 'Frescos', '1 kg', 1, 'kg', 7500, [['Sin marca', 1.0]]],
   ['pollo-kg', 'Pollo entero', 'Frescos', '1 kg', 1, 'kg', 4200, [['Sin marca', 1.0]]],
+  // ---- Ampliación del catálogo (versión 2): productos básicos de la canasta ----
+  ['sal-fina-500', 'Sal fina', 'Almacén', '500 g', 0.5, 'kg', 700, [['Celusal', 1.1], ['Dos Anclas', 1.05], ['Marolio', 0.8]]],
+  ['sal-gruesa-1kg', 'Sal gruesa', 'Almacén', '1 kg', 1, 'kg', 900, [['Celusal', 1.1], ['Dos Anclas', 1.05], ['Marolio', 0.8]]],
+  ['vinagre-alcohol-1l', 'Vinagre de alcohol', 'Almacén', '1 L', 1, 'l', 900, [['Menoyo', 1.1], ['Dos Anclas', 1.05], ['Marolio', 0.8]]],
+  ['aceite-oliva-500', 'Aceite de oliva extra virgen', 'Almacén', '500 ml', 0.5, 'l', 9500, [['Nucete', 1.1], ['Lira', 1.05], ['Cocinero', 0.95]]],
+  ['arroz-parboil-1kg', 'Arroz parboil', 'Almacén', '1 kg', 1, 'kg', 1900, [['Gallo', 1.15], ['Lucchetti', 1.0], ['Marolio', 0.82]]],
+  ['fideos-tirabuzon-500', 'Fideos tirabuzón', 'Almacén', '500 g', 0.5, 'kg', 1300, [['Matarazzo', 1.25], ['Lucchetti', 1.0], ['Don Vicente', 1.15], ['Marolio', 0.75]]],
+  ['harina-leudante-1kg', 'Harina leudante', 'Almacén', '1 kg', 1, 'kg', 1300, [['Blancaflor', 1.15], ['Pureza', 1.1], ['Favorita', 0.95]]],
+  ['levadura-seca-10', 'Levadura seca', 'Almacén', '10 g', 0.01, 'kg', 600, [['Levex', 1.05], ['Calsa', 1.0]]],
+  ['pan-rallado-500', 'Pan rallado', 'Almacén', '500 g', 0.5, 'kg', 1200, [['Preferido', 1.1], ['Mamá Cocina', 1.0], ['Marolio', 0.8]]],
+  ['lentejas-400', 'Lentejas secas', 'Almacén', '400 g', 0.4, 'kg', 1500, [['Egran', 1.1], ['Inca', 1.0], ['Marolio', 0.8]]],
+  ['arvejas-lata-300', 'Arvejas en lata', 'Almacén', '300 g', 0.3, 'kg', 700, [['Inca', 1.1], ['Noel', 1.0], ['Marolio', 0.78]]],
+  ['choclo-lata-300', 'Choclo amarillo en lata', 'Almacén', '300 g', 0.3, 'kg', 1100, [['Inca', 1.1], ['Arcor', 1.0], ['Marolio', 0.8]]],
+  ['pure-tomate-520', 'Puré de tomate', 'Almacén', '520 g', 0.52, 'kg', 800, [['La Campagnola', 1.1], ['Arcor', 1.0], ['Marolio', 0.75]]],
+  ['caldo-cubos-6', 'Caldo de verdura x6', 'Almacén', '6 u', 6, 'u', 900, [['Knorr', 1.1], ['Maggi', 1.05], ['Wilde', 0.85]]],
+  ['cacao-polvo-360', 'Cacao en polvo', 'Almacén', '360 g', 0.36, 'kg', 3200, [['Nesquik', 1.15], ['Toddy', 1.05], ['Marolio', 0.8]]],
+  ['leche-polvo-800', 'Leche en polvo entera', 'Lácteos', '800 g', 0.8, 'kg', 11000, [['La Serenísima', 1.12], ['Sancor', 1.05], ['Nido', 1.2]]],
+  ['queso-rallado-150', 'Queso rallado', 'Lácteos', '150 g', 0.15, 'kg', 3200, [['La Serenísima', 1.1], ['Sancor', 1.05], ['Milkaut', 0.95]]],
+  ['crema-200', 'Crema de leche', 'Lácteos', '200 ml', 0.2, 'l', 2100, [['La Serenísima', 1.12], ['Sancor', 1.03], ['Milkaut', 0.94]]],
+  ['yogur-firme-190', 'Yogur firme vainilla', 'Lácteos', '190 g', 0.19, 'kg', 900, [['La Serenísima', 1.1], ['Sancor', 1.02], ['Ilolay', 0.92]]],
+  ['margarina-200', 'Margarina', 'Lácteos', '200 g', 0.2, 'kg', 1600, [['Danica', 1.05], ['Delicia', 1.0]]],
+  ['galletitas-dulces-300', 'Galletitas dulces vainilla', 'Almacén', '300 g', 0.3, 'kg', 1500, [['Terrabusi', 1.15], ['Bagley', 1.1], ['Marolio', 0.8]]],
+  ['cereales-copos-300', 'Copos de maíz', 'Almacén', '300 g', 0.3, 'kg', 3000, [['Kellogg’s', 1.2], ['Granix', 1.0], ['Marolio', 0.8]]],
+  ['avena-400', 'Avena tradicional', 'Almacén', '400 g', 0.4, 'kg', 1600, [['Quaker', 1.15], ['Granix', 1.0], ['Marolio', 0.82]]],
+  ['dulce-batata-500', 'Dulce de batata', 'Almacén', '500 g', 0.5, 'kg', 2500, [['Arcor', 1.05], ['Dulcor', 0.95], ['Emeth', 1.0]]],
+  ['edulcorante-200', 'Edulcorante líquido', 'Almacén', '200 ml', 0.2, 'l', 2300, [['Hileret', 1.05], ['Chuker', 1.1], ['Marolio', 0.8]]],
+  ['mate-cocido-25', 'Mate cocido x25', 'Almacén', '25 u', 25, 'u', 900, [['Taragüí', 1.05], ['La Tranquera', 1.0], ['Unión', 0.95]]],
+  ['jamon-cocido-kg', 'Jamón cocido', 'Fiambrería', '1 kg', 1, 'kg', 14000, [['Paladini', 1.15], ['Cagnoli', 1.1], ['Calchaquí', 0.92]]],
+  ['queso-tybo-kg', 'Queso tybo', 'Fiambrería', '1 kg', 1, 'kg', 11000, [['La Paulina', 1.1], ['Sancor', 1.05], ['Punta del Agua', 0.92]]],
+  ['salchichas-6', 'Salchichas x6', 'Fiambrería', '6 u', 6, 'u', 1800, [['Paty', 1.05], ['Vienissima', 1.1], ['Calchaquí', 0.9]]],
+  ['hamburguesas-4', 'Hamburguesas congeladas x4', 'Congelados', '4 u', 4, 'u', 4200, [['Paty', 1.1], ['Swift', 1.0], ['Granja del Sol', 0.95]]],
+  ['papas-congeladas-1kg', 'Papas prefritas congeladas', 'Congelados', '1 kg', 1, 'kg', 4500, [['McCain', 1.15], ['Granja del Sol', 1.0], ['Frizzata', 0.92]]],
+  ['jugo-1l', 'Jugo de naranja listo', 'Bebidas', '1 L', 1, 'l', 1800, [['Cepita', 1.1], ['Baggio', 1.0], ['Ades', 1.05]]],
+  ['agua-saborizada-15', 'Agua saborizada pomelo', 'Bebidas', '1,5 L', 1.5, 'l', 1700, [['Levité', 1.1], ['Aquarius', 1.15], ['Villa del Sur', 1.0]]],
+  ['soda-2l', 'Soda en botella', 'Bebidas', '2 L', 2, 'l', 900, [['Ivess', 1.05], ['Villa del Sur', 1.1], ['Marolio', 0.8]]],
+  ['vino-tinto-750', 'Vino tinto Malbec', 'Bebidas', '750 ml', 0.75, 'l', 4500, [['Alma Mora', 1.0], ['Santa Julia', 1.1], ['Toro', 0.7]]],
+  ['cerveza-litro', 'Cerveza rubia retornable', 'Bebidas', '1 L', 1, 'l', 2200, [['Quilmes', 1.0], ['Brahma', 0.95], ['Andes', 1.05]]],
+  ['suavizante-900', 'Suavizante para ropa', 'Limpieza', '900 ml', 0.9, 'l', 2600, [['Vivere', 1.1], ['Comfort', 1.12], ['Marolio', 0.8]]],
+  ['jabon-liquido-ropa-3l', 'Jabón líquido para ropa', 'Limpieza', '3 L', 3, 'l', 9800, [['Ariel', 1.2], ['Skip', 1.15], ['Ala', 1.0], ['Zorro', 0.85]]],
+  ['limpiador-piso-900', 'Limpiador de pisos', 'Limpieza', '900 ml', 0.9, 'l', 1500, [['Procenex', 1.05], ['Poett', 1.1], ['Marolio', 0.8]]],
+  ['bolsas-residuos-10', 'Bolsas de residuos x10', 'Limpieza', '10 u', 10, 'u', 1100, [['Rendimax', 1.05], ['Bolsafort', 1.0]]],
+  ['esponja-3', 'Esponja de cocina x3', 'Limpieza', '3 u', 3, 'u', 1300, [['Mortimer', 1.05], ['Virulana', 1.1]]],
+  ['servilletas-70', 'Servilletas de papel x70', 'Limpieza', '70 u', 70, 'u', 900, [['Elite', 1.1], ['Campanita', 0.9]]],
+  ['desodorante-ambiente', 'Desodorante de ambiente', 'Limpieza', '360 ml', 0.36, 'l', 2600, [['Glade', 1.1], ['Poett', 1.0]]],
+  ['acondicionador-400', 'Acondicionador', 'Perfumería', '400 ml', 0.4, 'l', 3800, [['Pantene', 1.2], ['Sedal', 1.0], ['Plusbelle', 0.8]]],
+  ['desodorante-150', 'Desodorante en aerosol', 'Perfumería', '150 ml', 0.15, 'l', 3300, [['Rexona', 1.0], ['Axe', 1.05], ['Dove', 1.1]]],
+  ['cepillo-dental', 'Cepillo dental', 'Perfumería', '1 u', 1, 'u', 1500, [['Colgate', 1.1], ['Oral-B', 1.2], ['Kolynos', 0.9]]],
+  ['toallitas-femeninas-8', 'Toallitas femeninas x8', 'Perfumería', '8 u', 8, 'u', 1700, [['Always', 1.1], ['Kotex', 1.05], ['Lina', 0.9]]],
+  ['panales-g-30', 'Pañales talle G x30', 'Bebés', '30 u', 30, 'u', 18000, [['Pampers', 1.15], ['Huggies', 1.12], ['Babysec', 0.9]]],
+  ['alimento-perro-3kg', 'Alimento para perro adulto', 'Mascotas', '3 kg', 3, 'kg', 9500, [['Dog Chow', 1.1], ['Pedigree', 1.05], ['Sieger', 1.25]]],
+  ['alimento-gato-1kg', 'Alimento para gato adulto', 'Mascotas', '1 kg', 1, 'kg', 5200, [['Cat Chow', 1.1], ['Whiskas', 1.05], ['Excellent', 1.2]]],
+  ['lechuga-kg', 'Lechuga criolla', 'Frescos', '1 kg', 1, 'kg', 2600, [['Sin marca', 1.0]]],
+  ['zanahoria-kg', 'Zanahoria', 'Frescos', '1 kg', 1, 'kg', 1200, [['Sin marca', 1.0]]],
+  ['zapallo-kg', 'Zapallo anco', 'Frescos', '1 kg', 1, 'kg', 1100, [['Sin marca', 1.0]]],
+  ['limon-kg', 'Limón', 'Frescos', '1 kg', 1, 'kg', 2200, [['Sin marca', 1.0]]],
+  ['naranja-kg', 'Naranja de jugo', 'Frescos', '1 kg', 1, 'kg', 1600, [['Sin marca', 1.0]]],
+  ['nalga-kg', 'Nalga', 'Frescos', '1 kg', 1, 'kg', 15500, [['Sin marca', 1.0]]],
+  ['asado-kg', 'Asado de tira', 'Frescos', '1 kg', 1, 'kg', 11500, [['Sin marca', 1.0]]],
+  ['pan-frances-kg', 'Pan francés', 'Frescos', '1 kg', 1, 'kg', 3200, [['Sin marca', 1.0]]],
 ];
 
 function eanCheck(d12) {
@@ -122,6 +181,34 @@ export const BARRIOS = [
   ['Saavedra', -34.554, -58.487],
 ];
 
+// Ampliación (versión 2): más barrios de CABA y localidades del conurbano bonaerense
+export const ZONES_EXTRA = [
+  ['Villa Devoto', -34.6007, -58.5136, 'CABA'], ['Villa Pueyrredón', -34.58, -58.505, 'CABA'], ['Villa Luro', -34.638, -58.503, 'CABA'],
+  ['Liniers', -34.6425, -58.5199, 'CABA'], ['Mataderos', -34.6591, -58.5023, 'CABA'], ['Parque Patricios', -34.638, -58.402, 'CABA'],
+  ['Barracas', -34.6448, -58.3809, 'CABA'], ['La Boca', -34.6345, -58.3631, 'CABA'], ['Monserrat', -34.613, -58.381, 'CABA'],
+  ['Retiro', -34.5915, -58.3747, 'CABA'], ['Chacarita', -34.587, -58.454, 'CABA'], ['Villa Ortúzar', -34.58, -58.468, 'CABA'],
+  ['Agronomía', -34.594, -58.492, 'CABA'], ['Parque Chacabuco', -34.636, -58.438, 'CABA'], ['Villa Lugano', -34.676, -58.474, 'CABA'],
+  ['Floresta', -34.629, -58.484, 'CABA'], ['Vélez Sarsfield', -34.633, -58.493, 'CABA'], ['Villa Santa Rita', -34.615, -58.481, 'CABA'],
+  ['Coghlan', -34.56, -58.473, 'CABA'], ['Villa Crespo Norte', -34.594, -58.445, 'CABA'],
+  ['Caseros', -34.6056, -58.5631, 'Tres de Febrero'], ['Ciudad Jardín Lomas del Palomar', -34.6, -58.595, 'Tres de Febrero'],
+  ['Santos Lugares', -34.6006, -58.542, 'Tres de Febrero'], ['Villa Bosch', -34.588, -58.577, 'Tres de Febrero'],
+  ['Martín Coronado', -34.5917, -58.5857, 'Tres de Febrero'], ['El Palomar', -34.6158, -58.5958, 'Morón'],
+  ['Ciudadela', -34.638, -58.539, 'Tres de Febrero'], ['Villa Lynch', -34.593, -58.53, 'San Martín'],
+  ['San Martín', -34.5747, -58.5386, 'San Martín'], ['Villa Ballester', -34.548, -58.555, 'San Martín'], ['San Andrés', -34.56, -58.54, 'San Martín'],
+  ['Ramos Mejía', -34.6408, -58.5653, 'La Matanza'], ['San Justo', -34.6833, -58.56, 'La Matanza'], ['Lomas del Mirador', -34.665, -58.531, 'La Matanza'],
+  ['Villa Luzuriaga', -34.67, -58.585, 'La Matanza'], ['Haedo', -34.6447, -58.5939, 'Morón'], ['Morón', -34.6534, -58.6198, 'Morón'],
+  ['Castelar', -34.6522, -58.6436, 'Morón'], ['Ituzaingó', -34.6584, -58.667, 'Ituzaingó'], ['Hurlingham', -34.5886, -58.6394, 'Hurlingham'],
+  ['Vicente López', -34.5263, -58.4745, 'Vicente López'], ['Olivos', -34.5076, -58.4893, 'Vicente López'], ['Florida', -34.5302, -58.489, 'Vicente López'],
+  ['Munro', -34.5258, -58.5208, 'Vicente López'], ['San Isidro', -34.4708, -58.5286, 'San Isidro'], ['Martínez', -34.4925, -58.505, 'San Isidro'],
+  ['Boulogne', -34.495, -58.565, 'San Isidro'], ['San Fernando', -34.4419, -58.5596, 'San Fernando'], ['Tigre', -34.426, -58.5797, 'Tigre'],
+  ['Avellaneda', -34.6623, -58.3653, 'Avellaneda'], ['Wilde', -34.703, -58.32, 'Avellaneda'], ['Lanús', -34.7061, -58.3928, 'Lanús'],
+  ['Banfield', -34.744, -58.397, 'Lomas de Zamora'], ['Lomas de Zamora', -34.7609, -58.4063, 'Lomas de Zamora'], ['Temperley', -34.775, -58.397, 'Lomas de Zamora'],
+  ['Adrogué', -34.8, -58.39, 'Almirante Brown'], ['Quilmes', -34.7206, -58.2546, 'Quilmes'], ['Bernal', -34.71, -58.28, 'Quilmes'],
+  ['Berazategui', -34.764, -58.212, 'Berazategui'], ['Monte Grande', -34.819, -58.468, 'Esteban Echeverría'], ['Ezeiza', -34.853, -58.523, 'Ezeiza'],
+  ['San Miguel', -34.543, -58.712, 'San Miguel'], ['José C. Paz', -34.515, -58.768, 'José C. Paz'], ['Merlo', -34.665, -58.727, 'Merlo'],
+  ['Moreno', -34.65, -58.79, 'Moreno'], ['Pilar', -34.458, -58.914, 'Pilar'], ['Escobar', -34.348, -58.795, 'Escobar'], ['La Plata', -34.9214, -57.9545, 'La Plata'],
+];
+
 const STREETS = ['Av. Corrientes', 'Av. Rivadavia', 'Av. Santa Fe', 'Av. Cabildo', 'Av. Córdoba', 'Av. Scalabrini Ortiz', 'Av. Triunvirato', 'Av. San Juan', 'Av. Directorio', 'Av. Díaz Vélez', 'Av. Juan B. Justo', 'Av. Nazca', 'Av. Independencia', 'Av. Belgrano', 'Av. Las Heras', 'Av. del Libertador'];
 
 function makeStore(r, chain, lat, lng, barrio, idx, prefix) {
@@ -155,7 +242,26 @@ export function buildStores() {
       stores.push(makeStore(r, chain, lat + dLat, lng + dLng, barrio, idx++, 'ar-'));
     }
   }
-  return stores;
+  return [...stores, ...buildStoresExtra()];
+}
+
+/** Sucursales de la ampliación (versión 2). Semilla propia para no alterar las anteriores. */
+export function buildStoresExtra() {
+  const r = rng('ms-stores-v2');
+  const out = [];
+  let idx = 1;
+  for (const [barrio, lat, lng] of ZONES_EXTRA) {
+    const count = 2 + (r() < 0.35 ? 1 : 0);
+    const used = new Set();
+    for (let i = 0; i < count; i++) {
+      let chain;
+      do chain = CHAINS[Math.floor(r() * CHAINS.length)];
+      while (used.has(chain.id));
+      used.add(chain.id);
+      out.push(makeStore(r, chain, lat + (r() - 0.5) * 0.012, lng + (r() - 0.5) * 0.014, barrio, idx++, 'ar2-'));
+    }
+  }
+  return out;
 }
 
 /** Sucursales demo alrededor de un punto (para probar la app fuera de CABA). */
@@ -181,43 +287,38 @@ export function dayKey(d = new Date()) {
 }
 
 /** Precios vigentes + histórico mensual (12 meses) para un conjunto de sucursales. */
+/** Precios vigentes + serie mensual compacta (12 meses) por sucursal y producto. */
 export function buildPrices(products, stores, chainsById, today = new Date()) {
   const current = [];
-  const history = [];
+  const series = [];
   const brandDrift = {};
   for (const p of products) {
     const r = rng(`drift-${p.brand}-${p.category}`);
     brandDrift[p.id] = 0.021 + (r() - 0.45) * 0.018; // inflación mensual simulada por marca
   }
-  const months = [];
-  for (let m = 12; m >= 1; m--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - m, 15);
-    months.push({ m, key: monthKey(d), date: dayKey(d) });
-  }
+  const dates = [];
+  for (let m = 12; m >= 1; m--) dates.push(dayKey(new Date(today.getFullYear(), today.getMonth() - m, 15)));
   const todayKey = dayKey(today);
   for (const s of stores) {
-    const chain = chainsById[s.chainId];
+    const chain = chainsById[s.chainId] || { id: 'x', factor: 1 };
     for (const p of products) {
       const r = rng(`price-${s.id}-${p.id}`);
-      // ~7 % de faltantes estructurales por sucursal (frescos más faltantes en cadenas online-only)
-      const missProb = p.category === 'Frescos' && chain.id === 'dia' ? 0.3 : 0.07;
+      // ~7 % de faltantes estructurales por sucursal (frescos más faltantes en Día)
+      const missProb = (p.category === 'Frescos' || p.category === 'Fiambrería') && chain.id === 'dia' ? 0.3 : 0.07;
       if (r() < missProb) continue;
       const noise = 0.92 + r() * 0.16;
-      const price = Math.max(50, Math.round((p.basePrice * chain.factor * s.noise * noise) / 10) * 10);
+      const price = Math.max(50, Math.round((p.basePrice * chain.factor * (s.noise || 1) * noise) / 10) * 10);
       current.push({ key: `${s.id}|${p.id}`, storeId: s.id, productId: p.id, price, date: todayKey, source: 'demo', verified: false });
       let back = price;
-      const hist = [];
-      for (const { m, date } of [...months].reverse()) {
-        const rate = brandDrift[p.id] + (r() - 0.5) * 0.012;
-        back = back / (1 + rate);
-        hist.push({ storeId: s.id, productId: p.id, date, price: Math.round(back / 10) * 10, source: 'demo' });
-        void m;
+      const prices = [];
+      for (let i = 0; i < dates.length; i++) {
+        back = back / (1 + brandDrift[p.id] + (r() - 0.5) * 0.012);
+        prices.unshift(Math.round(back / 10) * 10);
       }
-      history.push(...hist);
-      history.push({ storeId: s.id, productId: p.id, date: todayKey, price, source: 'demo' });
+      series.push({ key: `${s.id}|${p.id}`, storeId: s.id, productId: p.id, dates, prices });
     }
   }
-  return { current, history };
+  return { current, series };
 }
 
 const ISSUERS = {

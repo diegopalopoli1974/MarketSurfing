@@ -1,4 +1,5 @@
 // CU-03 Optimizar Compra (día, comercio y medios de pago) — extendido por CU-04; continúa con CU-06.
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, modal, segmented, chip, spinner, steps, field } from '../ui/components.js';
 import { locationControl } from '../ui/location.js';
@@ -16,7 +17,7 @@ const { money, DAYS, DAYS_SHORT } = E;
 
 export async function render({ query }) {
   const lists = L.activeLists();
-  if (!lists.length) return h('div', { class: 'page' }, pageHeader('Buscar la mejor compra'), empty('list', 'Necesitás una lista', 'La búsqueda se hace sobre una lista de compras (precondición del caso de uso).', h('a', { class: 'btn btn-primary', href: '#/listas/nueva' }, icon('plus'), 'Crear lista')));
+  if (!lists.length) return h('div', { class: 'page' }, pageHeader('Buscar la mejor compra', { help: HELP.search }), empty('list', 'Necesitás una lista', 'La búsqueda se hace sobre una lista de compras (precondición del caso de uso).', h('a', { class: 'btn btn-primary', href: '#/listas/nueva' }, icon('plus'), 'Crear lista')));
   const profile = UD.get('profile');
   const st = {
     listId: query.get('lista') && L.getList(query.get('lista')) ? query.get('lista') : lists[0].id,
@@ -37,9 +38,9 @@ export async function render({ query }) {
   const radius = h('input', { type: 'range', min: 1, max: 15, step: 1, value: st.radiusKm, class: 'range', 'aria-label': 'Radio en kilómetros', oninput: (e) => ((st.radiusKm = Number(e.target.value)), (radiusOut.textContent = `${st.radiusKm} km`)) });
   const hasMyDays = profile.availability.buy.length > 0;
   const daysSeg = segmented('days', [
-    { value: 'today', label: 'Hoy' },
-    { value: 'mine', label: 'Mis días' },
-    { value: 'week', label: 'Toda la semana' },
+    { value: 'today', label: 'Hoy', tip: 'Calcula sólo con las ofertas y descuentos de hoy' },
+    { value: 'mine', label: 'Mis días', tip: 'Usa los días para comprar que cargaste en tu perfil' },
+    { value: 'week', label: 'Toda la semana', tip: 'Compara los 7 días y te dice cuál conviene («la mejor ola»)' },
   ], st.daysMode, (v) => {
     if (v === 'mine' && !hasMyDays) {
       toast('No cargaste días disponibles en tu perfil; se usará toda la semana', 'info', 5000);
@@ -48,9 +49,9 @@ export async function render({ query }) {
   });
   const payChk = h('input', { type: 'checkbox', checked: st.usePayments, disabled: !profile.payments.length, onchange: (e) => (st.usePayments = e.target.checked) });
   const costKm = h('input', { type: 'number', class: 'input', min: 0, max: 5000, step: 50, value: st.costPerKm, inputmode: 'numeric', onchange: (e) => (st.costPerKm = Math.max(0, Number(e.target.value) || 0)) });
-  const costWrap = h('div', { class: 'indent', hidden: true }, field('Costo de traslado por km ($)', costKm, 'Pondera la distancia al repartir la compra.'));
+  const costWrap = h('div', { class: 'indent', hidden: true }, field('Costo de traslado por km ($)', costKm, 'Pondera la distancia al repartir la compra.', 'Cuanto más alto, menos comercios se suman al reparto. Con 0 se reparte siempre al más barato.'));
   const multiChk = h('input', { type: 'checkbox', onchange: (e) => ((st.multi = e.target.checked), (costWrap.hidden = !st.multi)) });
-  const goBtn = h('button', { class: 'btn btn-primary btn-lg btn-block', onclick: () => ((st.excludedItems = []), run(true)) }, icon('wave'), 'Buscar');
+  const goBtn = h('button', { 'data-tip': 'Calcula precios finales por comercio y día; puede pedir permiso de ubicación', class: 'btn btn-primary btn-lg btn-block', onclick: () => ((st.excludedItems = []), run(true)) }, icon('wave'), 'Buscar');
 
   let lastPoint = null;
 
@@ -89,8 +90,8 @@ export async function render({ query }) {
               h('button', { class: 'btn btn-ghost', onclick: async () => {
                 const near = buildStoresAround(lastPoint.lat, lastPoint.lng, String(Date.now() % 100000));
                 await Cat.addStores(near);
-                const { current, history } = buildPrices(Cat.products().filter((p) => !p.sepa), near, Object.fromEntries(Cat.chains().map((c) => [c.id, c])));
-                await Cat.addRawPrices(current, history);
+                const { current, series } = buildPrices(Cat.products().filter((p) => !p.sepa && !p.manual), near, Object.fromEntries(Cat.chains().map((c) => [c.id, c])));
+                await Cat.addRawPrices(current, series);
                 toast('Se generaron 14 sucursales de demostración cerca', 'ok');
                 run(false);
               } }, 'Generar sucursales demo cerca')
@@ -116,7 +117,7 @@ export async function render({ query }) {
     const chipsRow = h('div', { class: 'chips', role: 'group', 'aria-label': 'Día a comparar' });
     const renderChips = () => {
       clear(chipsRow);
-      chipsRow.append(chip(h('span', {}, icon('star', { size: 16 }), ' Mejor día de cada comercio'), { active: dayChoice.value === 'best', onClick: () => ((dayChoice.value = 'best'), renderChips(), renderBody()) }));
+      chipsRow.append(chip(h('span', {}, icon('star', { size: 16 }), ' Mejor día de cada comercio'), { title: 'Para cada comercio, muestra el total de su día más conveniente', active: dayChoice.value === 'best', onClick: () => ((dayChoice.value = 'best'), renderChips(), renderBody()) }));
       for (const d of res.days) {
         const info = res.byDay.get(d);
         const isBest = res.bestOverall && res.bestOverall.day === d;
@@ -169,7 +170,7 @@ export async function render({ query }) {
             {},
             h(
               'button',
-              { class: 'res-row', onclick: () => openDetail(s.id) },
+              { class: 'res-row', onclick: () => openDetail(s.id), 'data-tip': 'Ver el detalle de precios, ofertas y descuentos de este comercio' },
               h('span', { class: 'res-rank', style: { background: col.color } }, String(rank.get(s.id))),
               h('span', { class: 'res-main' }, h('strong', {}, s.name), h('small', {}, `${fmtDistance(s.dist)}${isBest ? ` · mejor día: ${DAYS[b.day]}` : ''}${b.payment.label ? ` · ${b.payment.issuer}` : ''}`)),
               h('span', { class: 'res-total' }, h('strong', {}, money(b.total)), h('small', { class: saving > 0 ? 'good' : 'muted' }, saving > 0 ? `${col.t < 0.01 ? '▼ ' : ''}−${money(saving)} · ${E.pctFmt((saving / max) * 100, 0)}` : col.t > 0.99 && complete.length > 1 ? '▲ el más caro' : '—'))
@@ -184,7 +185,7 @@ export async function render({ query }) {
             {},
             h(
               'button',
-              { class: 'res-row incomplete', onclick: () => openMissing(s, b) },
+              { class: 'res-row incomplete', onclick: () => openMissing(s, b), 'data-tip': 'Le faltan productos: tocá para verlos y recalcular sin ellos' },
               h('span', { class: 'res-rank incomplete', 'aria-hidden': 'true' }, '!'),
               h('span', { class: 'res-main' }, h('strong', {}, s.name), h('small', {}, `${fmtDistance(s.dist)} · total no comparable`)),
               h('span', { class: 'res-total' }, h('span', { class: 'bangs', 'aria-label': `Faltan ${b.missing.length} productos` }, '!'.repeat(b.missing.length)), h('small', {}, 'Ver faltantes'))
@@ -317,6 +318,7 @@ export async function render({ query }) {
       actions: [
         {
           label: 'Ahorrar más cambiando marcas',
+          tip: 'Propone marcas equivalentes más baratas para tu lista (CU-04). Nada se cambia sin tu aprobación.',
           onClick: async (close) => {
             close();
             // A-4: punto de extensión EP_ResultadosCalculados -> CU-04
@@ -326,6 +328,7 @@ export async function render({ query }) {
         },
         {
           label: 'Confirmar opción',
+          tip: 'Elegís este comercio y día: te mostramos cómo llegar o cómo comprar online',
           kind: 'primary',
           onClick: (close) => {
             close();
@@ -366,13 +369,13 @@ export async function render({ query }) {
   return h(
     'div',
     { class: 'page' },
-    pageHeader('Buscar la mejor compra', { subtitle: 'Día, comercio y medios de pago en una sola búsqueda' }),
+    pageHeader('Buscar la mejor compra', { subtitle: 'Día, comercio y medios de pago en una sola búsqueda', help: HELP.search }),
     card(
-      field('Lista', listSel),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Radio: ', radiusOut), radius),
+      field('Lista', listSel, null, 'La lista de compras sobre la que se calcula. Podés crear o editar listas en «Listas».'),
+      h('div', { class: 'field', 'data-tip': 'Sólo se consideran comercios a esta distancia o menos de tu ubicación' }, h('span', { class: 'field-label' }, 'Radio: ', radiusOut), radius),
       h('fieldset', { class: 'fieldset' }, h('legend', {}, 'Días a evaluar'), daysSeg, !hasMyDays ? h('small', { class: 'hint' }, h('a', { href: '#/perfil' }, 'Cargá tus días disponibles'), ' para usar «Mis días».') : null),
-      h('label', { class: 'check' }, payChk, h('span', {}, `Aplicar descuentos de mis medios de pago (${profile.payments.length})`, !profile.payments.length ? h('small', { class: 'hint' }, ' — ', h('a', { href: '#/perfil' }, 'cargalos en tu perfil')) : null)),
-      h('label', { class: 'check' }, multiChk, h('span', {}, 'Repartir la compra en varios comercios', h('small', { class: 'hint block' }, 'Asigna cada producto al comercio más barato de cada día, ponderando la distancia.'))),
+      h('label', { class: 'check', 'data-tip': 'Suma los reintegros de bancos y billeteras que tengas cargados (respetando topes y días)' }, payChk, h('span', {}, `Aplicar descuentos de mis medios de pago (${profile.payments.length})`, !profile.payments.length ? h('small', { class: 'hint' }, ' — ', h('a', { href: '#/perfil' }, 'cargalos en tu perfil')) : null)),
+      h('label', { class: 'check', 'data-tip': 'En vez de un solo comercio, reparte cada producto donde está más barato ese día, considerando el costo de traslado' }, multiChk, h('span', {}, 'Repartir la compra en varios comercios', h('small', { class: 'hint block' }, 'Asigna cada producto al comercio más barato de cada día, ponderando la distancia.'))),
       costWrap,
       loc.el,
       profile.excluded.length ? h('p', { class: 'muted small' }, `Se omiten ${profile.excluded.length} cadena(s)/sucursal(es) excluidas en tu perfil.`) : null,

@@ -1,4 +1,4 @@
-// CU-08 Reportar Precios y Stock en Góndola (actor: Verificador).
+// CU-08 Reportar Precios y Stock en Góndola (actor: Colaborador nivel 1 o superior).
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, steps, field, setBusy } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
@@ -7,18 +7,19 @@ import * as Cat from '../data/catalog.js';
 import * as Geo from '../core/geo.js';
 import { interpret } from '../core/nlp.js';
 import { money, volumeCost } from '../core/engine.js';
-import { session, addPoints, POINT_RULES } from '../app/session.js';
+import { session, addPoints, POINT_RULES, collabLevel } from '../app/session.js';
+import { HELP } from '../ui/help.js';
 import * as Alerts from '../app/alerts.js';
 
 const GEOFENCE_M = 50;
 
 export async function render() {
   const profile = UD.get('profile');
-  if (!profile.verifier.enabled)
-    return h('div', { class: 'page' }, pageHeader('Reportar en góndola'), empty('shield', 'Función para Verificadores', 'Para reportar en góndola tenés que aceptar el rol de Verificador voluntario marcando días para verificar en tu perfil.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-08 · precondición'));
+  if (collabLevel() < 1)
+    return h('div', { class: 'page' }, pageHeader('Reportar en góndola', { help: HELP.gondola }), empty('shield', 'Función para Colaboradores', 'Para reportar en góndola tenés que ser Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-08 · precondición'));
 
   const simulate = !!profile.prefs.simulatePresence;
-  const root = h('div', { class: 'page' }, pageHeader('Reportar en góndola', { subtitle: 'Precio, promoción y stock, por voz o texto (sin fotos)' }));
+  const root = h('div', { class: 'page' }, pageHeader('Reportar en góndola', { subtitle: 'Precio, promoción y stock, por voz o texto (sin fotos)', help: HELP.gondola }));
   const stage = h('div');
   root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-08 · pasos 1–10 · A-1 · A-2 · A-3 · E-1 · E-2'));
 
@@ -140,7 +141,7 @@ export async function render() {
   const review = async (store, r) => {
     const cur = await Cat.currentPrice(store.id, r.product.id);
     const hist = (await Cat.historyForProduct(r.product.id)).filter((x) => x.storeId === store.id).slice(-6);
-    const ref = cur?.price || hist.at(-1)?.price || r.product.basePrice;
+    const ref = cur?.price || hist.at(-1)?.price || r.product.basePrice || null;
     const promos = Cat.promosForStore(store.id);
     const day = new Date().getDay();
     const published = volumeCost(1, 1, r.product, promos, day).label; // promo publicada vigente hoy
@@ -159,7 +160,7 @@ export async function render() {
     const today = new Date().toDateString();
     const status = { incidents: [], points: 0, review: false };
     // Paso 7 / E-2: rango plausible
-    if (r.price && (r.price < ref * 0.4 || r.price > ref * 2.5)) {
+    if (r.price && ref && (r.price < ref * 0.4 || r.price > ref * 2.5)) {
       status.review = true;
       act.reports.unshift({ ts: Date.now(), storeId: store.id, productId: r.product.id, price: r.price, status: 'en revisión' });
       await UD.save('activity');

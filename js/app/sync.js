@@ -21,7 +21,7 @@ export const DemoAdapter = {
         out.push({ storeId: rec.storeId, productId: rec.productId, price: Math.max(50, Math.round((rec.price * change) / 10) * 10), date: today, source: 'demo' });
       }
     }
-    const promos = buildPromos(Cat.products().filter((p) => !p.sepa), today).filter((p) => p.rotating);
+    const promos = buildPromos(Cat.products().filter((p) => !p.sepa && !p.manual), today).filter((p) => p.rotating);
     return { prices: out, promos, replacePromos: (p) => p.rotating && p.demo };
   },
 };

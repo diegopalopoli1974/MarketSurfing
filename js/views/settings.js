@@ -1,9 +1,10 @@
 // Seguridad, cuenta, preferencias y privacidad.
+import { HELP } from '../ui/help.js';
 import { h, icon } from '../ui/dom.js';
 import { pageHeader, card, toast, modal, confirmDialog, promptPassword, field, segmented, setBusy } from '../ui/components.js';
 import * as Auth from '../core/auth.js';
 import * as UD from '../core/userdata.js';
-import { session, lock, applyPrefs } from '../app/session.js';
+import { session, lock, applyPrefs, isAdmin, COLLAB_NAMES } from '../app/session.js';
 import { downloadBackup } from '../app/backup.js';
 import { passwordInput, strengthMeter, showRecoveryCode } from './login.js';
 import { requestPushPermission } from '../app/alerts.js';
@@ -62,11 +63,30 @@ export async function render({ query, rerender }) {
   const costKm = h('input', { type: 'number', class: 'input', min: 0, max: 5000, step: 50, value: prefs.costPerKm, onchange: (e) => savePrefs({ costPerKm: Math.max(0, +e.target.value || 0) }) });
   const sim = h('input', { type: 'checkbox', checked: !!prefs.simulatePresence, onchange: (e) => savePrefs({ simulatePresence: e.target.checked }, e.target.checked ? 'Presencia simulada activada (sólo para demostración)' : 'Presencia simulada desactivada') });
   const act = UD.get('activity');
+  const accounts = isAdmin() ? await Auth.listAccounts() : [];
+  const accountsCard = isAdmin()
+    ? card(
+        h('h2', { class: 'h3' }, icon('user'), ' Cuentas y roles del dispositivo'),
+        h('p', { class: 'muted small' }, 'Como Administrador asignás el nivel de cada cuenta. Nivel 1: cargar tickets y reportar en góndola (también se lo puede dar cada usuario aceptando el rol). Nivel 2: además, cargar comercios, productos y precios a mano.'),
+        h(
+          'ul',
+          { class: 'cards' },
+          accounts.map((a) => {
+            const sel = h('select', { class: 'input', 'aria-label': `Rol de ${a.displayName}`, disabled: a.role === 'admin', 'data-tip': a.role === 'admin' ? 'El Administrador tiene todos los permisos' : 'Cambia el nivel de Colaborador de esta cuenta' }, COLLAB_NAMES.map((n, i) => h('option', { value: i, selected: (a.role === 'admin' ? 2 : a.collab) === i }, n)));
+            sel.addEventListener('change', async () => {
+              await Auth.setCollab(a.id, Number(sel.value));
+              toast(`${a.displayName}: ${COLLAB_NAMES[Number(sel.value)]}`, 'ok');
+            });
+            return h('li', { class: 'row space ex-row' }, h('span', {}, h('strong', {}, a.displayName), h('small', { class: 'block muted' }, `@${a.username}${a.role === 'admin' ? ' · Administrador' : ''}`)), sel);
+          })
+        )
+      )
+    : null;
 
   return h(
     'div',
     { class: 'page' },
-    pageHeader('Seguridad y cuenta', { subtitle: `@${acc.username}${acc.role === 'admin' ? ' · administrador' : ''}` }),
+    pageHeader('Seguridad y cuenta', { subtitle: `@${acc.username} · ${acc.role === 'admin' ? 'Administrador' : COLLAB_NAMES[acc.collab || 0]}`, help: HELP.settings }),
     card(
       h('h2', { class: 'h3' }, icon('shield'), ' Cómo se protegen tus datos'),
       h(
@@ -102,9 +122,10 @@ export async function render({ query, rerender }) {
         }
       } }, 'Generar nuevo código'))
     ),
+    accountsCard,
     card(
       h('h2', { class: 'h3' }, 'Preferencias'),
-      field('Bloqueo automático por inactividad', autoLock),
+      field('Bloqueo automático por inactividad', autoLock, null, 'Tiempo sin usar la app tras el cual se bloquea y pide de nuevo la contraseña o la huella.'),
       h('fieldset', { class: 'fieldset' }, h('legend', {}, 'Tema'), segmented('theme', [
         { value: 'auto', label: 'Automático' },
         { value: 'light', label: 'Claro' },
@@ -115,7 +136,7 @@ export async function render({ query, rerender }) {
         { value: '1.15', label: 'Grande' },
         { value: '1.3', label: 'Muy grande' },
       ], String(prefs.fontScale || 1), (v) => savePrefs({ fontScale: Number(v) }))),
-      h('div', { class: 'grid2' }, field('Radio por defecto (km)', radius), field('Costo de traslado por km ($)', costKm)),
+      h('div', { class: 'grid2' }, field('Radio por defecto (km)', radius, null, 'Distancia máxima a tu ubicación para considerar comercios en las búsquedas.'), field('Costo de traslado por km ($)', costKm, null, 'Cuánto te «cuesta» moverte un kilómetro (ida y vuelta). Se usa al repartir la compra en varios comercios para no proponer viajes que no convienen.')),
       h('div', { class: 'row space' }, h('span', {}, 'Notificaciones de alertas'), h('button', { class: 'btn btn-ghost btn-sm', onclick: async () => toast(`Permiso: ${({ granted: 'concedido', denied: 'denegado (cambialo en el navegador)', default: 'sin decidir', unsupported: 'no soportado' })[await requestPushPermission()]}`, 'info') }, 'Permitir'))
     ),
     card(

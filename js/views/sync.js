@@ -1,4 +1,5 @@
 // CU-10 Sincronizar Precios Abiertos y Catálogos de APIs (Administrador / Planificador de tareas).
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, steps, field, setBusy, confirmDialog } from '../ui/components.js';
 import { locationControl } from '../ui/location.js';
@@ -7,7 +8,7 @@ import { isAdmin } from '../app/session.js';
 import { runSync, DemoAdapter, sepaAdapter } from '../app/sync.js';
 
 export async function render({ rerender }) {
-  if (!isAdmin()) return h('div', { class: 'page' }, pageHeader('Sincronizar precios'), empty('lock', 'Sólo para el Administrador', 'La primera cuenta creada en el dispositivo administra la sincronización.'));
+  if (!isAdmin()) return h('div', { class: 'page' }, pageHeader('Sincronizar precios', { help: HELP.sync }), empty('lock', 'Sólo para el Administrador', 'La primera cuenta creada en el dispositivo administra la sincronización.'));
   const stats = await Cat.stats();
   const log = (await Cat.meta.get('syncLog')) || [];
   const lastSync = await Cat.meta.get('lastSync');
@@ -49,15 +50,15 @@ export async function render({ rerender }) {
   return h(
     'div',
     { class: 'page' },
-    pageHeader('Sincronizar precios', { subtitle: `Última sincronización: ${lastSync || '—'}` }),
+    pageHeader('Sincronizar precios', { subtitle: `Última sincronización: ${lastSync || '—'}`, help: HELP.sync }),
     card(h('h2', { class: 'h3' }, 'Catálogo local'), h('dl', { class: 'dl' }, h('dt', {}, 'Sucursales'), h('dd', {}, String(stats.stores)), h('dt', {}, 'Productos'), h('dd', {}, String(stats.products)), h('dt', {}, 'Precios vigentes'), h('dd', {}, stats.prices.toLocaleString('es-AR')), h('dt', {}, 'Versiones históricas'), h('dd', {}, stats.history.toLocaleString('es-AR')), h('dt', {}, 'Promociones'), h('dd', {}, String(stats.promos)))),
     card(h('h2', { class: 'h3' }, 'Fuente de demostración'), h('p', { class: 'muted small' }, 'Simula la publicación diaria de precios. El Planificador de tareas la ejecuta automáticamente una vez por día al abrir la app.'), h('div', { class: 'row end' }, demoBtn)),
     card(
       h('h2', { class: 'h3' }, 'Precios Claros / SEPA (archivo)'),
       h('p', { class: 'muted small' }, 'Descargá el dataset SEPA desde datos.produccion.gob.ar (Precios Claros) en una computadora o en el celular y cargalo acá. Se importan sólo las sucursales del radio elegido; los precios nuevos se agregan como versiones sin borrar las anteriores.'),
-      field('Archivo(s) .zip o .csv', files),
+      field('Archivo(s) .zip o .csv', files, null, 'El .zip diario de Precios Claros (SEPA) o los CSV comercio, sucursales y productos.'),
       loc.el,
-      h('div', { class: 'grid2' }, field('Radio (km)', radius), field('Máximo de sucursales', maxStores)),
+      h('div', { class: 'grid2' }, field('Radio (km)', radius, null, 'Sólo se importan sucursales a esta distancia del punto elegido.'), field('Máximo de sucursales', maxStores, null, 'Límite para no llenar la memoria del teléfono.')),
       h('div', { class: 'row end' }, sepaBtn)
     ),
     progress,

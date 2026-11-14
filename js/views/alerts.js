@@ -1,4 +1,5 @@
 // CU-02 Gestionar Alertas de Umbral de Precio (pasos 1 a 5; los pasos 6 a 9 están en app/alerts.js).
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, confirmDialog, segmented, field, steps, setBusy } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
@@ -44,12 +45,12 @@ export async function render({ rerender }) {
       )
     : empty('bell', 'Sin alertas', 'Creá una alerta y te avisamos cuando un producto llegue al precio que buscás.');
 
-  return h('div', { class: 'page' }, pageHeader('Alertas de precio', { subtitle: 'Avisos cuando un producto alcanza tu umbral' }), newAlertForm(rerender), h('h2', { class: 'h3 section-title' }, 'Mis alertas'), listEl, steps('CU-02 · pasos 1–9 · A-1 · A-2 · A-3 · E-1'));
+  return h('div', { class: 'page' }, pageHeader('Alertas de precio', { subtitle: 'Avisos cuando un producto alcanza tu umbral', help: HELP.alerts }), newAlertForm(rerender), h('h2', { class: 'h3 section-title' }, 'Mis alertas'), listEl, steps('CU-02 · pasos 1–9 · A-1 · A-2 · A-3 · E-1'));
 }
 
 function newAlertForm(rerender) {
   const st = { target: null, type: 'price', usePromos: false };
-  const prodBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-block', onclick: async () => {
+  const prodBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-block', 'data-tip': 'Elegí una marca concreta o «cualquier marca» del producto', onclick: async () => {
     const r = await pickProduct({ title: 'Producto o marca a vigilar' });
     if (!r) return;
     st.target = r;
@@ -109,12 +110,12 @@ function newAlertForm(rerender) {
     prodBtn,
     refHint,
     segmented('atype', [
-      { value: 'price', label: 'Precio tope' },
-      { value: 'pct', label: '% de descuento' },
+      { value: 'price', label: 'Precio tope', tip: 'Avisa cuando el precio sea igual o menor a este valor' },
+      { value: 'pct', label: '% de descuento', tip: 'Avisa cuando el descuento (oferta o baja de precio) alcance este porcentaje' },
     ], 'price', (t) => ((st.type = t), (valueLabel.textContent = t === 'price' ? 'Precio tope ($)' : 'Descuento mínimo (%)'), (value.value = t === 'pct' ? '20' : st.ref ? String(Math.round((st.ref * 0.85) / 10) * 10) : ''))),
     h('label', { class: 'field' }, valueLabel, value),
-    h('div', { class: 'grid2' }, field('Vigente hasta', until), field('Radio (km)', radius)),
-    h('label', { class: 'check' }, promos, h('span', {}, 'Evaluar con promociones y mis medios de pago')),
+    h('div', { class: 'grid2' }, field('Vigente hasta', until, null, 'Después de esta fecha la alerta se desactiva sola.'), field('Radio (km)', radius, null, 'Sólo avisa por comercios a esta distancia o menos del punto de referencia.')),
+    h('label', { class: 'check', 'data-tip': 'Compara contra el precio final con ofertas del comercio y descuentos de tus medios de pago, no sólo el precio de lista' }, promos, h('span', {}, 'Evaluar con promociones y mis medios de pago')),
     loc.el,
     err,
     save

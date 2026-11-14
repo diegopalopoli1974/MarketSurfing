@@ -20,7 +20,7 @@ async function db() {
 
 export async function listAccounts() {
   const all = await (await db()).getAll('accounts');
-  return all.map(({ id, username, displayName, role, bio, lastLogin }) => ({ id, username, displayName, role, hasBio: !!bio, lastLogin }));
+  return all.map(({ id, username, displayName, role, bio, lastLogin, collab }) => ({ id, username, displayName, role, hasBio: !!bio, lastLogin, collab: collab || 0 }));
 }
 
 export async function getAccount(id) {
@@ -74,7 +74,7 @@ export async function register({ username, displayName, password }) {
 }
 
 function publicAccount(acc) {
-  return { id: acc.id, username: acc.username, displayName: acc.displayName, role: acc.role, hasBio: !!acc.bio };
+  return { id: acc.id, username: acc.username, displayName: acc.displayName, role: acc.role, hasBio: !!acc.bio, collab: acc.collab || 0 };
 }
 
 export function lockRemainingMs(acc) {
@@ -189,6 +189,18 @@ export async function verifyPassword(accountId, pw) {
 
 export async function deleteAccountRecord(accountId) {
   await (await db()).delete('accounts', accountId);
+}
+
+/**
+ * Nivel de Colaborador: 0 = Comprador, 1 = Colaborador nivel 1 (tickets y góndola, por consentimiento propio),
+ * 2 = Colaborador nivel 2 (además carga comercios, productos y precios; lo otorga el Administrador).
+ */
+export async function setCollab(accountId, level) {
+  const acc = await getAccount(accountId);
+  acc.collab = Math.max(0, Math.min(2, Number(level) || 0));
+  acc.collabSince = acc.collab ? acc.collabSince || Date.now() : null;
+  await saveAccount(acc);
+  return acc.collab;
 }
 
 export async function setRole(accountId, role) {

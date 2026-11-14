@@ -3,10 +3,11 @@ import { h, clear, icon } from './ui/dom.js';
 import { toast } from './ui/components.js';
 import * as Cat from './data/catalog.js';
 import * as UD from './core/userdata.js';
-import { session, onLock, applyPrefs, isAdmin } from './app/session.js';
+import { session, onLock, applyPrefs, isAdmin, collabLevel } from './app/session.js';
 import { renderLogin } from './views/login.js';
 import * as Alerts from './app/alerts.js';
 import { autoSyncIfDue } from './app/sync.js';
+import { initTooltips } from './ui/help.js';
 
 const app = document.getElementById('app');
 
@@ -22,14 +23,15 @@ const routes = {
   reportes: () => import('./views/reports.js'),
   ajustes: () => import('./views/settings.js'),
   avisos: () => import('./views/inbox.js'),
+  catalogo: () => import('./views/catalog.js'),
 };
 
 const NAV = [
-  { r: '', label: 'Inicio', icon: 'home' },
-  { r: 'listas', label: 'Listas', icon: 'list' },
-  { r: 'buscar', label: 'Buscar', icon: 'wave' },
-  { r: 'reportes', label: 'Reportes', icon: 'chart' },
-  { r: 'mas', label: 'Más', icon: 'layers' },
+  { r: '', label: 'Inicio', icon: 'home', tip: 'Pantalla principal' },
+  { r: 'listas', label: 'Listas', icon: 'list', tip: 'Tus listas de compras' },
+  { r: 'buscar', label: 'Buscar', icon: 'wave', tip: 'Dónde y cuándo conviene comprar una lista' },
+  { r: 'reportes', label: 'Reportes', icon: 'chart', tip: 'Inflación por marca, por rubro y mapa de promociones' },
+  { r: 'mas', label: 'Más', icon: 'layers', tip: 'Alertas, perfil, funciones de Colaborador y seguridad' },
 ];
 
 function parseHash() {
@@ -59,21 +61,23 @@ function renderNav() {
     const isMore = n.r === 'mas';
     const active = isMore ? !['', 'listas', 'buscar', 'reportes'].includes(route) : route === n.r;
     const el = isMore
-      ? h('button', { class: ['nav-item', active && 'active'], onclick: openMore, 'aria-haspopup': 'dialog' }, icon(n.icon), h('span', {}, n.label), inbox ? h('b', { class: 'badge', 'aria-label': `${inbox} avisos sin leer` }, String(inbox)) : null)
-      : h('a', { class: ['nav-item', active && 'active'], href: `#/${n.r}`, 'aria-current': active ? 'page' : null }, icon(n.icon), h('span', {}, n.label));
+      ? h('button', { class: ['nav-item', active && 'active'], onclick: openMore, 'aria-haspopup': 'dialog', 'data-tip': n.tip }, icon(n.icon), h('span', {}, n.label), inbox ? h('b', { class: 'badge', 'aria-label': `${inbox} avisos sin leer` }, String(inbox)) : null)
+      : h('a', { class: ['nav-item', active && 'active'], href: `#/${n.r}`, 'aria-current': active ? 'page' : null, 'data-tip': n.tip }, icon(n.icon), h('span', {}, n.label));
     navEl.append(el);
   }
 }
 
 function openMore() {
   const items = [
-    { href: '#/alertas', icon: 'bell', label: 'Alertas de precio', sub: 'CU-02' },
-    { href: '#/avisos', icon: 'info', label: 'Avisos recibidos', sub: 'Bandeja' },
-    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'CU-07' },
-    { href: '#/gondola', icon: 'mic', label: 'Reportar en góndola', sub: 'CU-08 · Verificador' },
-    { href: '#/ticket', icon: 'ticket', label: 'Cargar ticket', sub: 'CU-09' },
-    isAdmin() ? { href: '#/sync', icon: 'sync', label: 'Sincronizar precios', sub: 'CU-10 · Administrador' } : null,
-    { href: '#/ajustes', icon: 'shield', label: 'Seguridad y cuenta', sub: 'Contraseña, huella, copia' },
+    { href: '#/alertas', icon: 'bell', label: 'Alertas de precio', sub: 'Te avisamos cuando un producto llega a tu precio · CU-02' },
+    { href: '#/avisos', icon: 'info', label: 'Avisos recibidos', sub: 'Avisos de tus alertas' },
+    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'Medios de pago, días, comercios y gamas · CU-07' },
+    !collabLevel() ? { href: '#/perfil?s=dias', icon: 'mic', label: 'Sumarme como Colaborador', sub: 'Para cargar tickets y reportar en góndola' } : null,
+    collabLevel() >= 1 ? { href: '#/gondola', icon: 'mic', label: 'Reportar en góndola', sub: 'CU-08 · Colaborador' } : null,
+    collabLevel() >= 1 ? { href: '#/ticket', icon: 'ticket', label: 'Cargar ticket', sub: 'CU-09 · Colaborador' } : null,
+    collabLevel() >= 2 ? { href: '#/catalogo', icon: 'store', label: 'Cargar comercios, productos y precios', sub: 'CU-12 · Colaborador nivel 2' } : null,
+    isAdmin() ? { href: '#/sync', icon: 'sync', label: 'Sincronizar precios', sub: 'Demo o archivo Precios Claros · CU-10 · Administrador' } : null,
+    { href: '#/ajustes', icon: 'shield', label: 'Seguridad y cuenta', sub: isAdmin() ? 'Contraseña, huella, copia y roles de las cuentas' : 'Contraseña, huella y copia de seguridad' },
   ].filter(Boolean);
   const sheet = h('dialog', { class: 'sheet', 'aria-label': 'Más opciones' });
   const close = () => {
@@ -118,6 +122,7 @@ async function route() {
 async function enterApp() {
   buildShell();
   if (!location.hash) location.hash = '#/';
+  document.body.classList.add('in-app');
   await route();
   // tareas en segundo plano tras el ingreso
   autoSyncIfDue().catch(() => {});
@@ -132,12 +137,15 @@ onLock((reason) => {
 });
 
 function showLogin() {
+  document.body.classList.remove('in-app');
   applyPrefs();
   clear(app).append(renderLogin({ onSuccess: enterApp }));
 }
 
 window.addEventListener('hashchange', route);
 window.addEventListener('ms:inbox', () => navEl && renderNav());
+
+initTooltips();
 
 async function boot() {
   const splash = h('div', { class: 'splash' }, h('img', { src: 'icons/icon.svg', alt: '', width: 72, height: 72 }), h('h1', {}, 'MarketSurfing'), h('p', { class: 'muted', id: 'boot-msg' }, 'Iniciando…'), h('div', { class: 'progress' }, h('div', { class: 'progress-bar', id: 'boot-bar' })));

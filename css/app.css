@@ -485,3 +485,36 @@ dialog { color: var(--ink); }
 @media (forced-colors: active) {
   .res-rank, .map-dot { forced-color-adjust: none; }
 }
+
+/* ---------- Ayuda contextual ---------- */
+.tooltip { position: fixed; z-index: 2000; max-width: 280px; background: var(--ink); color: var(--bg); font-size: 0.8rem; line-height: 1.35; padding: 0.45rem 0.6rem; border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); pointer-events: none; }
+.page-head-wrap { display: flex; flex-direction: column; gap: 0.6rem; }
+.page-head-actions { display: flex; gap: 0.3rem; align-items: center; }
+.help-btn { font-weight: 800; font-size: 1.05rem; border: 1.5px solid var(--line); border-radius: 50%; min-width: 40px; min-height: 40px; color: var(--accent); }
+.help-btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.help-panel { background: var(--accent-soft); border-radius: var(--radius); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.92rem; }
+.help-panel h2 { font-size: 1rem; display: flex; gap: 0.4rem; align-items: center; margin: 0; }
+.help-panel p { margin: 0; }
+.info-btn { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 0.35rem; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; color: var(--muted); font: italic 700 0.72rem/1 Georgia, serif; cursor: help; vertical-align: 1px; padding: 0; }
+.info-btn:hover { border-color: var(--accent); color: var(--accent); }
+.help-more { background: var(--surface-2); border-radius: 8px; padding: 0.4rem 0.6rem; color: var(--ink-2); }
+
+/* ---------- Notebook / pantallas anchas ---------- */
+@media (min-width: 1024px) {
+  body.in-app .bottom-nav {
+    inset: 0 auto 0 0; width: 232px; display: flex; flex-direction: column; gap: 0.2rem;
+    padding: 1.2rem 0.8rem; border-top: 0; border-right: 1px solid var(--line);
+  }
+  body.in-app .bottom-nav::before { content: 'MarketSurfing'; font-weight: 800; font-size: 1.15rem; color: var(--accent); padding: 0 0.6rem 1rem; }
+  body.in-app .nav-item { flex-direction: row; justify-content: flex-start; gap: 0.7rem; padding: 0.55rem 0.8rem; border-radius: 12px; font-size: 0.95rem; min-height: 46px; }
+  body.in-app .nav-item:hover { background: var(--surface-2); }
+  body.in-app .nav-item.active { background: var(--accent-soft); }
+  body.in-app .badge { position: static; margin-left: auto; }
+  body.in-app .main, body.in-app .demo-banner { margin-left: 232px; }
+  body.in-app .main { width: auto; max-width: 980px; padding: 1.5rem 2.5rem 3rem; margin-right: auto; }
+  body.in-app .toast-host { bottom: 1.5rem; left: calc(50% + 116px); }
+  .sheet { max-width: 420px; margin: auto auto 0 240px; border-radius: 22px 22px 0 0; }
+  .tiles { grid-template-columns: repeat(4, 1fr); }
+  .hero h1 { max-width: none; }
+  .map { max-width: 640px; }
+}

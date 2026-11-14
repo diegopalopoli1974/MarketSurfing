@@ -12,6 +12,8 @@ for (const proto of [Element.prototype, DocumentFragment.prototype]) {
 
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);
+  // los botones de sólo ícono muestran su etiqueta como tooltip
+  if ((tag === 'button' || tag === 'a') && props?.['aria-label'] && !props['data-tip']) props = { ...props, 'data-tip': props['aria-label'] };
   applyProps(el, props);
   append(el, children);
   return el;

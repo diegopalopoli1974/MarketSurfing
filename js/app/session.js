@@ -16,6 +16,11 @@ export async function begin(sess) {
   session.account = sess.account;
   session.reporterId = (await sha256Hex(`reporter:${sess.account.id}`)).slice(0, 16); // identificador anónimo
   await UD.startSession(sess.account.id, sess.account.username, sess.key);
+  // migración: el antiguo «Verificador» pasa a Colaborador nivel 1
+  if (!session.account.collab && UD.get('profile').verifier?.enabled) {
+    const { setCollab } = await import('../core/auth.js');
+    session.account.collab = await setCollab(session.account.id, 1);
+  }
   applyPrefs();
   lastActivity = Date.now();
   clearInterval(timer);
@@ -51,6 +56,9 @@ export function applyPrefs() {
 }
 
 export const isAdmin = () => session.account?.role === 'admin';
+/** Nivel efectivo de Colaborador (el Administrador tiene todas las capacidades). */
+export const collabLevel = () => (isAdmin() ? 2 : session.account?.collab || 0);
+export const COLLAB_NAMES = ['Comprador', 'Colaborador nivel 1', 'Colaborador nivel 2'];
 
 // ---------- Puntos (RF-10, reglas públicas y determinísticas RNF-12) ----------
 export const POINT_RULES = {

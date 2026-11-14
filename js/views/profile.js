@@ -1,7 +1,10 @@
 // CU-07 Gestionar Perfil de Compra (RF-13, RF-14, RF-19, RF-22). Todo opcional y privado (RNF-10).
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, toast, modal, segmented, field, steps, chip, confirmDialog } from '../ui/components.js';
 import * as UD from '../core/userdata.js';
+import * as Auth from '../core/auth.js';
+import { session, isAdmin, collabLevel, COLLAB_NAMES } from '../app/session.js';
 import * as Cat from '../data/catalog.js';
 import * as L from '../app/listsvc.js';
 import { PAYMENT_ISSUERS } from '../data/demo-seed.js';
@@ -26,7 +29,7 @@ export async function render({ query }) {
     clear(body).append(tab === 'pagos' ? payments() : tab === 'dias' ? availability() : tab === 'excluidos' ? excluded(draw) : tiers());
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Mi perfil de compra', { subtitle: 'Opcional y privado: se usa para afinar búsquedas y alertas' }), tabs, body, steps('CU-07 · pasos 1–4 · A-1 · E-1'));
+  return h('div', { class: 'page' }, pageHeader('Mi perfil de compra', { subtitle: 'Opcional y privado: se usa para afinar búsquedas y alertas', help: HELP.profile }), tabs, body, steps('CU-07 · pasos 1–4 · A-1 · E-1'));
 }
 
 const confirmSaved = () => toast('Perfil actualizado', 'ok'); // paso 4
@@ -90,27 +93,31 @@ function availability() {
   return card(
     row('buy', 'Días para comprar', 'Se usan en la búsqueda con «Mis días».'),
     row('receive', 'Días para recibir compras'),
-    row('verify', 'Días para verificar comercios', 'Al marcarlos te ofrecemos ser Verificador voluntario.'),
-    h('p', { class: 'muted small' }, pr.verifier.enabled ? `Sos Verificador voluntario desde ${new Date(pr.verifier.consentAt).toLocaleDateString('es-AR')}.` : 'No sos Verificador.'),
+    row('verify', 'Días para colaborar', 'Al marcarlos te ofrecemos ser Colaborador: cargar tickets y reportar precios en góndola.'),
+    h('p', { class: 'muted small' }, collabLevel() ? `Tu rol: ${COLLAB_NAMES[collabLevel()]}${pr.verifier.consentAt ? ` (desde ${new Date(pr.verifier.consentAt).toLocaleDateString('es-AR')})` : ''}.` : 'Rol: Comprador. Marcá días para colaborar si querés sumarte como Colaborador.'),
     err,
-    h('div', { class: 'row end' }, pr.verifier.enabled ? h('button', { class: 'btn btn-ghost', onclick: async () => {
-      if (!(await confirmDialog('Dejar de ser Verificador', '¿Querés dejar el rol de Verificador voluntario? Ya no podrás reportar en góndola.', { ok: 'Dejar el rol' }))) return;
+    h('div', { class: 'row end' }, session.account.collab ? h('button', { class: 'btn btn-ghost', 'data-tip': 'Volvés a ser Comprador: ya no vas a poder cargar tickets, reportar en góndola ni cargar catálogo.', onclick: async () => {
+      if (!(await confirmDialog('Dejar de ser Colaborador', '¿Querés dejar el rol de Colaborador? Ya no podrás cargar tickets, reportar en góndola ni cargar catálogo. Si tenías nivel 2, el Administrador tendrá que volver a otorgarlo.', { ok: 'Dejar el rol' }))) return;
       pr.verifier = { enabled: false, consentAt: null };
       pr.availability.verify = [];
       await UD.save('profile');
-      toast('Ya no sos Verificador', 'ok');
-      location.reload();
-    } }, 'Dejar el rol de Verificador') : null, h('button', { class: 'btn btn-primary', onclick: async () => {
+      session.account.collab = await Auth.setCollab(session.account.id, 0);
+      toast('Ahora sos Comprador', 'ok');
+      location.hash = '#/';
+    } }, 'Dejar el rol de Colaborador') : null, h('button', { class: 'btn btn-primary', 'data-tip': 'Guarda tus días y franjas horarias', onclick: async () => {
       err.textContent = '';
       // Paso 2: franjas coherentes
-      for (const [k, s] of Object.entries(av.slots)) if (s?.from && s?.to && s.from >= s.to) return (err.textContent = `Franja inválida en «${k === 'buy' ? 'comprar' : k === 'receive' ? 'recibir' : 'verificar'}»: «desde» debe ser anterior a «hasta»`);
-      // A-1: consentimiento explícito para ser Verificador
-      if (av.verify.length && !pr.verifier.enabled) {
-        const ok = await verifierConsent();
+      for (const [k, s] of Object.entries(av.slots)) if (s?.from && s?.to && s.from >= s.to) return (err.textContent = `Franja inválida en «${k === 'buy' ? 'comprar' : k === 'receive' ? 'recibir' : 'colaborar'}»: «desde» debe ser anterior a «hasta»`);
+      // A-1: consentimiento explícito para ser Colaborador (nivel 1)
+      if (av.verify.length && !session.account.collab && !isAdmin()) {
+        const ok = await collabConsent();
         if (!ok) {
           av.verify = [];
-          toast('No se guardaron los días de verificación', 'info');
-        } else pr.verifier = { enabled: true, consentAt: Date.now() };
+          toast('No se guardaron los días para colaborar', 'info');
+        } else {
+          pr.verifier = { enabled: true, consentAt: Date.now() };
+          session.account.collab = await Auth.setCollab(session.account.id, 1);
+        }
       }
       pr.availability = av;
       await UD.save('profile');
@@ -119,17 +126,17 @@ function availability() {
   );
 }
 
-function verifierConsent() {
+function collabConsent() {
   return new Promise((resolve) => {
     const chk = h('input', { type: 'checkbox' });
     const m = modal({
-      title: 'Ser Verificador voluntario',
+      title: 'Ser Colaborador',
       content: h(
         'div',
         {},
-        h('p', {}, 'Como Verificador vas a poder reportar precios, promociones y faltantes estando dentro de una sucursal (a menos de 50 m, validado por GPS).'),
+        h('p', {}, 'Como Colaborador nivel 1 vas a poder cargar tickets de compra y reportar precios, promociones y faltantes estando dentro de una sucursal (a menos de 50 m, validado por GPS). El nivel 2 (cargar comercios, productos y precios a mano) lo otorga el Administrador.'),
         h('ul', { class: 'bullets' }, h('li', {}, 'Tu ubicación se usa sólo para validar la geocerca en el momento y no se guarda.'), h('li', {}, 'Los reportes se publican sin tu nombre y suman puntos según reglas públicas.'), h('li', {}, 'Podés dejar el rol cuando quieras.')),
-        h('label', { class: 'check' }, chk, h('span', {}, 'Acepto participar como Verificador voluntario'))
+        h('label', { class: 'check' }, chk, h('span', {}, 'Acepto participar como Colaborador'))
       ),
       actions: [
         { label: 'No, gracias', value: false },

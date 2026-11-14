@@ -13,7 +13,7 @@ export function locationControl({ name = 'loc', allowManual = true, label = 'Ubi
   const renderManual = () => {
     clear(box);
     if (mode !== 'manual') return;
-    const input = h('input', { class: 'input', type: 'search', placeholder: 'Barrio, localidad o dirección', 'aria-label': 'Ubicación manual' });
+    const input = h('input', { class: 'input', type: 'search', placeholder: 'Barrio, localidad o «calle altura, localidad»', enterkeyhint: 'search', 'aria-label': 'Ubicación manual' });
     const list = h('ul', { class: 'pick-list compact' });
     const show = (items) => {
       clear(list);
@@ -28,17 +28,29 @@ export function locationControl({ name = 'loc', allowManual = true, label = 'Ubi
           } }, icon('pin', { size: 18 }), h('span', {}, p.name)))
         );
     };
-    input.addEventListener('input', () => show(Geo.searchPlacesOffline(input.value)));
-    const online = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: async () => {
-      if (input.value.trim().length < 4) return toast('Escribí una dirección más completa', 'info');
+    const searchOnline = async () => {
+      const q = input.value.trim();
+      if (q.length < 4) return toast('Escribí la dirección: calle, altura y localidad', 'info');
+      clear(list).append(h('li', { class: 'muted pad' }, 'Buscando en internet…'));
       try {
-        const r = await Geo.searchAddressOnline(input.value);
-        if (!r.length) toast('Dirección no reconocida', 'error');
-        show(r);
+        show(await Geo.searchAddressOnline(q));
       } catch (e) {
-        toast(e.message, 'error');
+        clear(list).append(h('li', { class: 'form-error pad' }, e.message));
       }
-    } }, icon('search', { size: 16 }), 'Buscar dirección (en línea)');
+    };
+    input.addEventListener('input', () => {
+      const res = Geo.searchPlacesOffline(input.value);
+      show(res);
+      if (input.value.trim().length >= 4)
+        list.append(h('li', {}, h('button', { type: 'button', class: 'pick-item', onclick: searchOnline, 'data-tip': 'Busca la dirección exacta (calle y altura) en el servicio oficial Georef y en OpenStreetMap. Requiere conexión.' }, icon('search', { size: 18 }), h('span', {}, h('strong', {}, `Buscar «${input.value.trim()}» en internet`), h('small', {}, 'Calle y altura, por ejemplo: Bouchard 2855, Caseros')))));
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchOnline();
+      }
+    });
+    const online = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: searchOnline, 'data-tip': 'Busca la dirección exacta (calle y altura) en internet' }, icon('search', { size: 16 }), 'Buscar dirección exacta (en línea)');
     box.append(h('div', { class: 'row' }, input), online, list);
     show(Geo.searchPlacesOffline(''));
   };

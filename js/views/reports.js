@@ -1,4 +1,5 @@
 // CU-11 Consultar Reportes de Mercado (RF-16 índice por marca, RF-21 analítica agregada y anonimizada).
+import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, segmented, field, spinner, steps } from '../ui/components.js';
 import { locationControl } from '../ui/location.js';
@@ -165,7 +166,7 @@ export async function render() {
   return h(
     'div',
     { class: 'page' },
-    pageHeader('Reportes de mercado', { subtitle: 'Índices por marca, variación por rubro y promociones por zona' }),
+    pageHeader('Reportes de mercado', { subtitle: 'Índices por marca, variación por rubro y promociones por zona', help: HELP.reports }),
     card(typeSeg, genField, h('div', { class: 'grid2' }, field('Período', period), field('Radio de la zona (km)', radius)), loc.el, h('button', { class: 'btn btn-primary btn-block', onclick: go }, icon('chart'), 'Ver reporte')),
     out,
     steps('CU-11 · pasos 1–6 · A-1 · A-2')

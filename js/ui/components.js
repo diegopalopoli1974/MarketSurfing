@@ -26,7 +26,7 @@ export function modal({ title, content, actions = [], onClose, wide = false, dis
   };
   const body = h('div', { class: 'modal-body' }, content);
   const head = h('header', { class: 'modal-head' }, h('h2', { id: 'modal-title' }, title), dismissable ? h('button', { class: 'icon-btn', 'aria-label': 'Cerrar', onclick: () => close(null) }, icon('x')) : null);
-  const foot = actions.length ? h('footer', { class: 'modal-foot' }, actions.map((a) => h('button', { class: ['btn', a.kind ? `btn-${a.kind}` : 'btn-ghost'], onclick: () => a.onClick ? a.onClick(close) : close(a.value) }, a.label))) : null;
+  const foot = actions.length ? h('footer', { class: 'modal-foot' }, actions.map((a) => h('button', { class: ['btn', a.kind ? `btn-${a.kind}` : 'btn-ghost'], 'data-tip': a.tip || null, onclick: () => a.onClick ? a.onClick(close) : close(a.value) }, a.label))) : null;
   dlg.append(head, body, foot || '');
   dlg.addEventListener('cancel', (e) => {
     e.preventDefault();
@@ -67,18 +67,47 @@ export function promptPassword(title, message) {
   });
 }
 
-export function pageHeader(title, { subtitle, back, actions } = {}) {
-  return h(
+export function pageHeader(title, { subtitle, back, actions, help } = {}) {
+  let panel = null;
+  let helpBtn = null;
+  if (help) {
+    panel = h(
+      'section',
+      { class: 'help-panel', hidden: true, id: `help-${title.replace(/\W+/g, '-')}` },
+      h('h2', {}, icon('info', { size: 20 }), help.title || '¿Qué hace esta pantalla?'),
+      h('p', {}, help.text),
+      help.tips?.length ? h('ul', { class: 'bullets' }, help.tips.map((t) => h('li', {}, t))) : null
+    );
+    helpBtn = h('button', { class: 'icon-btn help-btn', type: 'button', 'aria-label': '¿Qué hace esta pantalla?', 'aria-expanded': 'false', 'aria-controls': panel.id, onclick: () => {
+      panel.hidden = !panel.hidden;
+      helpBtn.setAttribute('aria-expanded', String(!panel.hidden));
+      helpBtn.classList.toggle('on', !panel.hidden);
+    } }, '?');
+  }
+  const head = h(
     'header',
     { class: 'page-head' },
     back ? h('a', { class: 'icon-btn', href: back, 'aria-label': 'Volver' }, icon('back')) : null,
     h('div', { class: 'page-head-text' }, h('h1', {}, title), subtitle ? h('p', { class: 'muted' }, subtitle) : null),
-    actions ? h('div', { class: 'page-head-actions' }, actions) : null
+    actions || helpBtn ? h('div', { class: 'page-head-actions' }, actions || null, helpBtn) : null
   );
+  return panel ? h('div', { class: 'page-head-wrap' }, head, panel) : head;
 }
 
-export function field(label, control, hint) {
-  return h('label', { class: 'field' }, h('span', { class: 'field-label' }, label), control, hint ? h('small', { class: 'hint' }, hint) : null);
+/** Campo con etiqueta, pista visible opcional y ayuda ampliada (ⓘ, también como tooltip). */
+export function field(label, control, hint, help) {
+  const tip = help || null;
+  if (tip && control instanceof Element && !control.getAttribute('data-tip')) control.setAttribute('data-tip', tip);
+  let more = null;
+  let btn = null;
+  if (help) {
+    more = h('small', { class: 'hint help-more', hidden: true }, help);
+    btn = h('button', { type: 'button', class: 'info-btn', 'aria-label': `Ayuda: ${label}`, 'data-tip': help, onclick: (e) => {
+      e.preventDefault();
+      more.hidden = !more.hidden;
+    } }, 'i');
+  }
+  return h('label', { class: 'field' }, h('span', { class: 'field-label' }, label, btn), control, hint ? h('small', { class: 'hint' }, hint) : null, more);
 }
 
 export function empty(iconName, title, text, action) {
@@ -91,13 +120,13 @@ export function segmented(name, options, value, onChange) {
   for (const o of options) {
     const id = `${name}-${o.value}`;
     const input = h('input', { type: 'radio', name, id, value: o.value, checked: o.value === value, onchange: () => onChange(o.value) });
-    wrap.append(h('div', { class: 'seg-opt' }, input, h('label', { for: id }, o.icon ? icon(o.icon, { size: 18 }) : null, o.label)));
+    wrap.append(h('div', { class: 'seg-opt' }, input, h('label', { for: id, 'data-tip': o.tip || null }, o.icon ? icon(o.icon, { size: 18 }) : null, o.label)));
   }
   return wrap;
 }
 
 export function chip(label, { active, onClick, title } = {}) {
-  return h('button', { type: 'button', class: ['chip', active && 'chip-on'], 'aria-pressed': active ? 'true' : 'false', onclick: onClick, title }, label);
+  return h('button', { type: 'button', class: ['chip', active && 'chip-on'], 'aria-pressed': active ? 'true' : 'false', onclick: onClick, 'data-tip': title || null }, label);
 }
 
 export function spinner(label = 'Cargando…') {
