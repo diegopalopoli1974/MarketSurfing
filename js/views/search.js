@@ -341,7 +341,7 @@ export async function render({ query }) {
     let plan = best;
     const body = h('div');
     if (!best) {
-      results.append(h('div', { class: 'card warn', role: 'alert' }, h('strong', {}, 'Ningún comercio queda dentro de la distancia máxima'), h('p', {}, `Con ${st.maxKm} km de recorrido total (ida y vuelta) no se llega a ningún comercio del radio. Aumentá la distancia máxima a recorrer.`), steps('CU-03 · A-2')));
+      results.append(h('div', { class: 'card warn', role: 'alert' }, h('strong', {}, 'Ningún comercio queda dentro de la distancia máxima'), h('p', {}, `Con ${st.maxKm} km de recorrido total (ida y vuelta) no se llega a ningún comercio del radio. Aumentá la distancia máxima a recorrer.`), steps('CU-03 · A-2 · E-3')));
       return;
     }
     const draw = () => {
