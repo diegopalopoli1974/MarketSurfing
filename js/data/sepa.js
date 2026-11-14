@@ -122,7 +122,6 @@ function slug(s) {
     .slice(0, 60);
 }
 
-const VTEX_HOSTS = ['carrefour', 'jumbo', 'disco', 'vea', 'supermercadosdia', 'masonline', 'changomas'];
 
 /**
  * Importa una selección de archivos SEPA. opts: { point, radiusKm, maxStores, knownProducts:Map, onProgress }
@@ -185,13 +184,7 @@ export async function importSepa(files, opts) {
       const b = banderas.get(bKey) || { name: `Comercio ${r.id_comercio}`, url: '' };
       const chainId = `sepa-${bKey}`;
       if (!out.chains.has(chainId)) {
-        let host = null;
-        try {
-          host = b.url ? new URL(b.url.startsWith('http') ? b.url : `https://${b.url}`).host : null;
-        } catch {
-          host = null;
-        }
-        out.chains.set(chainId, { id: chainId, name: b.name, factor: 1, online: !!host, platform: host && VTEX_HOSTS.some((v) => host.includes(v)) ? 'vtex' : host ? 'propia' : null, host, sepa: true });
+        out.chains.set(chainId, { id: chainId, name: b.name, factor: 1, sepa: true });
       }
       const id = `sepa-${bKey}-${r.id_sucursal}`;
       storeIds.add(`${bKey}-${r.id_sucursal}`);

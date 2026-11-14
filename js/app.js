@@ -8,6 +8,7 @@ import { renderLogin } from './views/login.js';
 import * as Alerts from './app/alerts.js';
 import { autoSyncIfDue } from './app/sync.js';
 import { initTooltips } from './ui/help.js';
+import { leaveGuard, setLeaveGuard } from './app/nav.js';
 
 const app = document.getElementById('app');
 
@@ -71,12 +72,12 @@ function openMore() {
   const items = [
     { href: '#/alertas', icon: 'bell', label: 'Alertas de precio', sub: 'Te avisamos cuando un producto llega a tu precio · CU-02' },
     { href: '#/avisos', icon: 'info', label: 'Avisos recibidos', sub: 'Avisos de tus alertas' },
-    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'Medios de pago, días, comercios y gamas · CU-07' },
+    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'Medios de pago, días, comercios y gamas · CU-06' },
     !collabLevel() ? { href: '#/perfil?s=dias', icon: 'mic', label: 'Sumarme como Colaborador', sub: 'Para cargar tickets y reportar en góndola' } : null,
-    collabLevel() >= 1 ? { href: '#/gondola', icon: 'mic', label: 'Reportar en góndola', sub: 'CU-08 · Colaborador' } : null,
-    collabLevel() >= 1 ? { href: '#/ticket', icon: 'ticket', label: 'Cargar ticket', sub: 'CU-09 · Colaborador' } : null,
-    collabLevel() >= 2 ? { href: '#/catalogo', icon: 'store', label: 'Cargar comercios, productos y precios', sub: 'CU-12 · Colaborador nivel 2' } : null,
-    isAdmin() ? { href: '#/sync', icon: 'sync', label: 'Sincronizar precios', sub: 'Demo o archivo Precios Claros · CU-10 · Administrador' } : null,
+    collabLevel() >= 1 ? { href: '#/gondola', icon: 'mic', label: 'Reportar en góndola', sub: 'CU-07 · Colaborador' } : null,
+    collabLevel() >= 1 ? { href: '#/ticket', icon: 'ticket', label: 'Cargar ticket', sub: 'CU-08 · Colaborador' } : null,
+    collabLevel() >= 2 ? { href: '#/catalogo', icon: 'store', label: 'Cargar comercios, productos y precios', sub: 'CU-11 · Colaborador nivel 2' } : null,
+    isAdmin() ? { href: '#/sync', icon: 'sync', label: 'Sincronizar precios', sub: 'Demo o archivo Precios Claros · CU-09 · Administrador' } : null,
     { href: '#/ajustes', icon: 'shield', label: 'Seguridad y cuenta', sub: isAdmin() ? 'Contraseña, huella, copia y roles de las cuentas' : 'Contraseña, huella y copia de seguridad' },
   ].filter(Boolean);
   const sheet = h('dialog', { class: 'sheet', 'aria-label': 'Más opciones' });
@@ -99,8 +100,46 @@ function openMore() {
   sheet.showModal();
 }
 
+let currentHash = location.hash;
+let bouncing = false;
+
+/** Si la vista tiene cambios sin guardar, pregunta antes de salir (CU-01 A-4). */
+async function guardedRoute() {
+  if (bouncing) {
+    bouncing = false;
+    return;
+  }
+  const g = leaveGuard();
+  if (g && location.hash !== currentHash) {
+    const target = location.hash;
+    bouncing = true;
+    location.hash = currentHash; // vuelve a la vista con los cambios
+    const { modal } = await import('./ui/components.js');
+    modal({
+      title: 'Cambios sin guardar',
+      content: h('p', {}, `Hiciste cambios en ${g.name} que todavía no guardaste. Si salís sin guardar, se pierden.`),
+      actions: [
+        { label: 'Seguir editando', value: null },
+        { label: 'Salir sin guardar', onClick: (close) => (close(), setLeaveGuard(null), (location.hash = target)) },
+        { label: 'Guardar y salir', kind: 'primary', onClick: async (close) => {
+          close();
+          if (await g.save()) {
+            setLeaveGuard(null);
+            location.hash = target;
+          }
+        } },
+      ],
+    });
+    return;
+  }
+  setLeaveGuard(null);
+  currentHash = location.hash;
+  await route();
+}
+
 async function route() {
   if (!session.account) return;
+  currentHash = location.hash;
   const token = ++renderToken;
   const { route: r, params, query } = parseHash();
   const loader = routes[r] || routes[''];
@@ -142,7 +181,7 @@ function showLogin() {
   clear(app).append(renderLogin({ onSuccess: enterApp }));
 }
 
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', guardedRoute);
 window.addEventListener('ms:inbox', () => navEl && renderNav());
 
 initTooltips();

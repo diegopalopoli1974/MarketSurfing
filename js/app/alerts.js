@@ -1,4 +1,4 @@
-// CU-02 pasos 6 a 9: evaluación de alertas de umbral cuando se actualizan precios (CU-08, CU-09, CU-10).
+// CU-12 Evaluar y Notificar Alertas de Precio: incluido por los casos que actualizan precios (CU-07, CU-08, CU-09 y CU-11).
 import * as UD from '../core/userdata.js';
 import * as Cat from '../data/catalog.js';
 import { distanceKm } from '../core/geo.js';
@@ -6,6 +6,14 @@ import { volumeCost, money } from '../core/engine.js';
 import { notifyInbox } from './session.js';
 
 const DEDUP_MS = 24 * 3600 * 1000;
+
+/** Zonas de una alerta (las alertas antiguas tenían un único punto de referencia y radio). */
+export function zonesOf(a) {
+  if (a.zones?.length) return a.zones;
+  if (a.ref) return [{ lat: a.ref.lat, lng: a.ref.lng, label: a.ref.label, radiusKm: a.radiusKm || 3 }];
+  return [];
+}
+const inZones = (a, store) => zonesOf(a).some((z) => distanceKm(z, store) <= z.radiusKm);
 
 function finalPrice(alert, storeId, product, listPrice) {
   if (!alert.usePromos) return { final: listPrice, label: null };
@@ -40,7 +48,7 @@ export async function evaluate(changes) {
     if (!product || !store) continue;
     for (const a of alerts) {
       if (a.productId ? a.productId !== product.id : a.generic !== product.generic) continue;
-      if (distanceKm(a.ref, store) > a.radiusKm) continue;
+      if (!inZones(a, store)) continue;
       const { final, label } = finalPrice(a, store.id, product, ch.price);
       let hit = false;
       if (a.type === 'price') hit = final <= a.value;
@@ -48,10 +56,10 @@ export async function evaluate(changes) {
         const regular = Math.max(ch.price, ch.prev || 0);
         hit = regular > 0 && ((regular - final) / regular) * 100 >= a.value;
       }
-      if (!hit) continue; // A-2
+      if (!hit) continue; // A-1
       const key = `${product.id}|${store.id}`;
       a.sentLog = a.sentLog || {};
-      if (a.sentLog[key] && Date.now() - a.sentLog[key] < DEDUP_MS) continue; // A-3
+      if (a.sentLog[key] && Date.now() - a.sentLog[key] < DEDUP_MS) continue; // A-2
       a.sentLog[key] = Date.now();
       if (!hits.has(a)) hits.set(a, []);
       hits.get(a).push({ product, store, final, label });

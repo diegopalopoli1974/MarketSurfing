@@ -1,4 +1,4 @@
-// CU-10: sincronización de precios mediante adaptadores (RNF-07). El "Planificador" corre al abrir la app.
+// CU-09: sincronización de precios mediante adaptadores (RNF-07). El "Planificador" corre al abrir la app.
 import * as Cat from '../data/catalog.js';
 import { rng, dayKey, buildPromos } from '../data/demo-seed.js';
 import { importSepa } from '../data/sepa.js';

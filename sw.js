@@ -1,8 +1,9 @@
 // Service worker de MarketSurfing: la app funciona completa sin conexión.
 // Archivo generado por tools/build-sw.mjs — no editar a mano.
-const VERSION = 'ea3608f6e4fe';
+const VERSION = 'ad1ae963adbd';
 const CACHE = `ms-shell-${VERSION}`;
 const RUNTIME = 'ms-runtime-v1';
+const TILES = 'ms-tiles-v1';
 const FILES = [
   "./",
   "index.html",
@@ -11,6 +12,7 @@ const FILES = [
   "js/app/alerts.js",
   "js/app/backup.js",
   "js/app/listsvc.js",
+  "js/app/nav.js",
   "js/app/session.js",
   "js/app/sync.js",
   "js/app.js",
@@ -35,7 +37,6 @@ const FILES = [
   "js/views/alerts.js",
   "js/views/brands.js",
   "js/views/catalog.js",
-  "js/views/delivery.js",
   "js/views/gondola.js",
   "js/views/home.js",
   "js/views/inbox.js",
@@ -67,6 +68,23 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (url.hostname === 'tile.openstreetmap.org') {
+    // teselas del mapa: se guardan las vistas recientemente para verlas sin conexión (máx. 800)
+    e.respondWith(
+      caches.open(TILES).then(async (c) => {
+        const hit = await c.match(req);
+        if (hit) return hit;
+        const res = await fetch(req);
+        if (res.ok || res.type === 'opaque') {
+          await c.put(req, res.clone());
+          const keys = await c.keys();
+          if (keys.length > 800) await Promise.all(keys.slice(0, keys.length - 800).map((k) => c.delete(k)));
+        }
+        return res;
+      })
+    );
+    return;
+  }
   if (url.origin !== self.location.origin) return; // p. ej. búsqueda de direcciones: siempre en línea
   if (req.mode === 'navigate') {
     e.respondWith(caches.match('./index.html', { ignoreSearch: true }).then((r) => r || fetch(req)));

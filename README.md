@@ -25,27 +25,28 @@ Funciona igual que en el celular: abrí la dirección publicada con Chrome, Edge
 
 | CU | Pantalla | Notas de implementación |
 |---|---|---|
-| CU-01 Gestionar Listas | Listas | Versionado incremental, baja lógica (A-1), historial y restauración, escaneo de código de barras si el navegador lo soporta |
-| CU-02 Alertas de umbral | Más → Alertas | Punto de referencia por GPS o manual; evaluación al actualizarse precios (CU-08/09/10); sin duplicados en 24 h; notificación local + bandeja |
-| CU-03 Optimizar Compra | Buscar | Hoy / Mis días / Toda la semana, medios de pago, multi-comercio previo (A-2), mapa verde→rojo con «!» por faltante, recalcular sin faltantes (A-3) |
+| CU-01 Gestionar Listas | Listas | Cada guardado (nombre, productos o cantidades) crea una versión; historial y restauración como versión nueva (A-3); barra «Cambios sin guardar» y aviso al salir (A-4); baja lógica (A-1) |
+| CU-02 Alertas de umbral | Más → Alertas | Una o más zonas (barrio, localidad o dirección geocodificada, o un punto tocado en el mapa), cada una con su radio; sin GPS |
+| CU-03 Optimizar Compra | Buscar | Hoy / Mis días / Toda la semana, medios de pago; mapa con calles y nombres, lista con ofertas y medio de pago aplicados, tabla comercio × día; reparto con máximo de comercios y de km, opcionalmente en distintos días (A-2); recalcular sin faltantes (A-3) |
 | CU-04 Optimizar Marcas | Buscar → detalle → «Ahorrar más…» | Ahorro objetivo (mínimo de cambios) y modo experto por gamas; nunca aplica sin aprobación; incluye CU-05 |
 | CU-05 Sustituir Marca | Listas → «Cambiar marca» | Valida equivalencia (categoría, presentación, unidad), nueva versión y «Deshacer» |
-| CU-06 Delivery | Confirmar opción → «Comprar online» | Genera el Cart Permalink de VTEX; no procesa pagos (SKU simulados en la demo) |
-| CU-07 Perfil de compra | Más → Mi perfil | Medios de pago (sólo tipo y emisor), disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
-| CU-08 Reportar en góndola | Más → Reportar en góndola | Geocerca de 50 m por GPS (sin ingreso manual), dictado, intérprete local de texto coloquial, incidencias y reputación, puntos con topes |
-| CU-09 Ticket por OCR | Más → Cargar ticket | Auditoría: CUIT, suma = total, antigüedad ≤ 30 días, huella anti duplicado; asociación manual (A-1) |
-| CU-10 Sincronizar | Más → Sincronizar (administrador) | Adaptadores (demo y archivo SEPA/Precios Claros .zip/.csv), versiones inmutables, cuarentena ante errores, planificador diario al abrir la app |
-| CU-11 Reportes | Reportes | Índice base 100 por marca y ranking de menor suba, variación por rubro, mapa de promociones; agregados y anónimos |
-| CU-12 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Colaborador nivel 2 y Administrador: alta de comercios (ubicados por dirección o GPS), productos (asociados a un genérico para que sean comparables, EAN validado) y precios con promoción; «Mis cargas» para revisar y eliminar |
+| CU-06 Perfil de compra | Más → Mi perfil | Medios de pago (sólo tipo y emisor), disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
+| CU-07 Reportar en góndola | Más → Reportar en góndola | Geocerca de 50 m por GPS, dictado, intérprete local; promociones vistas se aplican 7 días; precio fuera de rango se confirma y no suma puntos; incidencias → reputación visible en resultados |
+| CU-08 Ticket por OCR | Más → Cargar ticket | Promoción y descuento por línea, medio de pago y su descuento; auditoría (CUIT, ítems − descuentos = total, ≤ 30 días, huella anti duplicado); registro personal para «Mis compras» |
+| CU-09 Sincronizar | Más → Sincronizar (administrador) | Adaptadores (demo y archivo SEPA/Precios Claros .zip/.csv), versiones inmutables, cuarentena ante errores, planificador diario al abrir la app |
+| CU-10 Reportes | Reportes | Índice base 100 por marca con explicación y ejemplo, variación por rubro, mapa de promociones; «Mis compras»: gasto, promociones aprovechadas y beneficio por medio de pago |
+| CU-11 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Carga de precio con alta en el momento de comercio (A-1) o producto (A-2) inexistentes; «Mis cargas» (A-3) |
+| CU-12 Evaluar alertas | (incluido) | Se ejecuta cada vez que CU-07, CU-08, CU-09 o CU-11 actualizan precios; un aviso por alerta, sin repetir en 24 h |
+| CU-13 Asignar nivel | Seguridad y cuenta → Cuentas y roles | Sólo Administrador |
 
 ### Roles
 
 | Rol | Puede |
 |---|---|
 | Comprador | Listas, búsqueda, marcas, alertas, perfil, reportes |
-| Colaborador nivel 1 | Además: cargar tickets (CU-09) y reportar en góndola (CU-08). Se obtiene aceptando el rol desde *Mi perfil → Disponibilidad → Días para colaborar* |
-| Colaborador nivel 2 | Además: cargar comercios, productos y precios a mano (CU-12). Lo otorga el Administrador en *Seguridad y cuenta → Cuentas y roles* |
-| Administrador | Todo, más sincronización (CU-10) y asignación de roles. Es la primera cuenta creada en el dispositivo |
+| Colaborador nivel 1 | Además: cargar tickets (CU-08) y reportar en góndola (CU-07). Se obtiene aceptando el rol desde *Mi perfil → Disponibilidad → Días para colaborar* |
+| Colaborador nivel 2 | Además: cargar comercios, productos y precios a mano (CU-11). Lo otorga el Administrador en *Seguridad y cuenta → Cuentas y roles* |
+| Administrador | Todo, más sincronización (CU-09) y asignación de niveles (CU-13). Es la primera cuenta creada en el dispositivo |
 
 ### Ayuda en pantalla
 
@@ -55,12 +56,13 @@ Cada pantalla muestra una etiqueta discreta con los pasos de la especificación 
 
 ### Adaptaciones por ser 100 % local
 
-- **Servicios externos** del modelo: GPS real del teléfono; «Servicio IA (LLM)» → intérprete local de texto (no envía datos); «Notificaciones push» → notificaciones locales del service worker; «APIs de supermercados» → verificación con los precios locales; «Cron Daemon» → sincronización automática una vez por día al abrir la app.
+- **Servicios externos** del modelo: GPS real del teléfono; «Servicio IA (LLM)» → intérprete local de texto (no envía datos); «Notificaciones push» → notificaciones locales del service worker; «Cron Daemon» → sincronización automática una vez por día al abrir la app.
 - **Administrador**: la primera cuenta creada en el dispositivo.
 - **Catálogo de demostración**: unos 100 productos genéricos (≈280 con sus marcas) y unas 200 sucursales en CABA y el conurbano, con 12 meses de historia.
 - **Direcciones**: la búsqueda en línea usa Georef (servicio oficial de normalización de direcciones de Argentina) y, si no encuentra, OpenStreetMap. Sin conexión se ofrece una lista de barrios y localidades.
-- **Precios Claros**: el navegador no puede descargar el dataset directamente; se descarga el .zip de SEPA y se importa desde CU-10 filtrando por radio.
-- **Presencia simulada** (Seguridad y cuenta → Demostración): permite mostrar CU-08 sin estar en un local; esos reportes no suman puntos.
+- **Mapas**: calles y barrios de OpenStreetMap (las teselas vistas se guardan para usarlas sin conexión); sin conexión se dibuja un mapa simplificado con distancias.
+- **Precios Claros**: el navegador no puede descargar el dataset directamente; se descarga el .zip de SEPA y se importa desde CU-09 filtrando por radio.
+- **Presencia simulada** (Seguridad y cuenta → Demostración): permite mostrar CU-07 sin estar en un local; esos reportes no suman puntos.
 
 ## Seguridad
 
@@ -69,12 +71,12 @@ Cada pantalla muestra una etiqueta discreta con los pasos de la especificación 
 - Huella/rostro: passkey con la extensión **PRF** (Chrome Android, Safari iOS 18+); la huella desenvuelve la misma clave. Si el equipo no soporta PRF, la opción no se ofrece.
 - Bloqueo automático por inactividad (configurable) y al volver de segundo plano; demora creciente tras 5 intentos fallidos.
 - Sin `innerHTML` con datos: toda la interfaz se construye con nodos de texto. Content-Security-Policy estricta, sin scripts de terceros, sin referrer.
-- Ubicación sólo en memoria (RNF-03), salvo el punto que el usuario elige para una alerta.
+- Ubicación sólo en memoria (RNF-03); las alertas guardan únicamente las zonas elegidas por el usuario.
 - Copia de seguridad cifrada descargable y eliminación de cuenta.
 
 ## OCR real (opcional)
 
-Sin el motor instalado, CU-09 usa un formulario asistido. Para OCR en el teléfono, agregá [Tesseract.js](https://github.com/naptha/tesseract.js) v5 en `vendor/tesseract/`:
+Sin el motor instalado, CU-08 usa un formulario asistido. Para OCR en el teléfono, agregá [Tesseract.js](https://github.com/naptha/tesseract.js) v5 en `vendor/tesseract/`:
 
 ```
 vendor/tesseract/tesseract.min.js

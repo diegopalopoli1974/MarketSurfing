@@ -1,5 +1,5 @@
 // Motor analítico determinístico (RNF-01): mismas entradas -> mismo resultado. Sin patrocinios.
-// RF-05 cálculo multidimensional de promociones, RF-06 optimización por día y comercio, RF-18 marcas.
+// RF-05 cálculo multidimensional de promociones, RF-06 optimización por día y comercio, RF-17 marcas.
 import * as Cat from '../data/catalog.js';
 import { distanceKm } from './geo.js';
 
@@ -95,75 +95,142 @@ export async function buildContext({ point, radiusKm, excluded = [], usePayments
   return { point, radiusKm, stores, prices, outOfStock, promosByStore, usePayments, issuers: new Set(payments.map((p) => p.issuer)) };
 }
 
-/** Asignación multi-comercio de un día: cada producto al comercio de menor precio final, ponderando traslado. */
-export function multiStorePlan(items, day, ctx, costPerKm, maxStores = 4) {
-  const stores = ctx.stores;
-  const costs = items.map((it) => stores.map((s) => lineFor(s.id, it, ctx, day)));
-  const maxNet = Math.max(1, ...costs.flat().filter(Boolean).map((l) => l.net));
-  const PENALTY = maxNet * 20;
-  const travel = (si) => Math.round(stores[si].dist * 2 * costPerKm);
+// ---------------- Reparto de la compra (CU-03 A-2) ----------------
 
-  const evaluate = (set) => {
-    const assign = items.map((_, i) => {
-      let best = -1;
-      for (const si of set) {
-        const l = costs[i][si];
-        if (l && (best < 0 || l.net < costs[i][best].net)) best = si;
-      }
-      return best;
-    });
-    const perStore = new Map();
-    let score = 0;
-    let missing = 0;
-    assign.forEach((si, i) => {
-      if (si < 0) {
-        missing++;
-        score += PENALTY;
-        return;
-      }
-      if (!perStore.has(si)) perStore.set(si, []);
-      perStore.get(si).push(i);
-    });
-    const parts = [];
-    for (const [si, idxs] of perStore) {
-      const lines = idxs.map((i) => ({ ...costs[i][si], item: items[i] }));
-      const subtotal = lines.reduce((a, l) => a + l.net, 0);
-      const pay = paymentDiscount(stores[si].id, subtotal, day, ctx);
-      const t = travel(si);
-      score += subtotal - pay.discount + t;
-      parts.push({ storeId: stores[si].id, lines, gross: lines.reduce((a, l) => a + l.gross, 0), subtotal, payment: pay, total: subtotal - pay.discount, travel: t });
+/** Recorrido más corto que sale del punto, pasa por todos los comercios y vuelve (fuerza bruta, n ≤ 6). */
+export function routeKm(point, stops) {
+  if (!stops.length) return { km: 0, order: [] };
+  const d0 = stops.map((s) => distanceKm(point, s));
+  const dd = stops.map((a) => stops.map((b) => distanceKm(a, b)));
+  let best = { km: Infinity, order: [] };
+  const idx = stops.map((_, i) => i);
+  const perm = (arr, l) => {
+    if (l === arr.length) {
+      let km = d0[arr[0]] + d0[arr[arr.length - 1]];
+      for (let i = 1; i < arr.length; i++) km += dd[arr[i - 1]][arr[i]];
+      if (km < best.km - 1e-9) best = { km, order: [...arr] };
+      return;
     }
-    // un comercio sin productos asignados no suma traslado
-    return { set: [...perStore.keys()], parts, score, missing, assign };
+    for (let i = l; i < arr.length; i++) {
+      [arr[l], arr[i]] = [arr[i], arr[l]];
+      perm(arr, l + 1);
+      [arr[l], arr[i]] = [arr[i], arr[l]];
+    }
   };
+  perm(idx, 0);
+  return { km: best.km, order: best.order.map((i) => stops[i]) };
+}
 
-  // punto de partida: el mejor comercio único (considerando traslado)
-  let current = null;
-  stores.forEach((_, si) => {
-    const e = evaluate([si]);
-    if (!current || e.score < current.score) current = e;
-  });
-  if (!current) return null;
-  while (current.set.length < maxStores) {
-    let bestNext = null;
-    stores.forEach((_, si) => {
-      if (current.set.includes(si)) return;
-      const e = evaluate([...current.set, si]);
-      if (e.score < current.score - 1 && (!bestNext || e.score < bestNext.score)) bestNext = e;
+/**
+ * Reparte los productos entre «visitas» (comercio y día) minimizando: total con ofertas y descuentos + km recorridos × costo por km.
+ * Restricciones: como máximo maxStores visitas y maxKm km recorridos en total (un recorrido por día: salida, comercios y regreso).
+ * splitDays = false: todas las visitas el mismo día (se evalúa cada día y se elige el mejor).
+ */
+export function splitPlan(items, ctx, { days, splitDays = false, maxStores = 3, maxKm = 10, costPerKm = 250 }) {
+  const stores = ctx.stores;
+  const plan = (dayset) => {
+    const visits = [];
+    for (const d of dayset) stores.forEach((s, si) => visits.push({ si, day: d, key: `${s.id}|${d}` }));
+    const cost = items.map((it) => visits.map((v) => lineFor(stores[v.si].id, it, ctx, v.day)));
+    const maxNet = Math.max(1, ...cost.flat().filter(Boolean).map((l) => l.net));
+    const PENALTY = maxNet * 50;
+    const routeCache = new Map();
+    const travelOf = (set) => {
+      const byDay = new Map();
+      for (const vi of set) {
+        const v = visits[vi];
+        if (!byDay.has(v.day)) byDay.set(v.day, []);
+        byDay.get(v.day).push(stores[v.si]);
+      }
+      let km = 0;
+      const routes = [];
+      for (const [day, st] of byDay) {
+        const key = `${day}:${st.map((x) => x.id).sort().join(',')}`;
+        if (!routeCache.has(key)) routeCache.set(key, routeKm(ctx.point, st));
+        const r = routeCache.get(key);
+        km += r.km;
+        routes.push({ day, km: r.km, order: r.order.map((x) => x.id) });
+      }
+      return { km, routes };
+    };
+    const evaluate = (set) => {
+      const assign = items.map((_, i) => {
+        let best = -1;
+        for (const vi of set) {
+          const l = cost[i][vi];
+          if (l && (best < 0 || l.net < cost[i][best].net)) best = vi;
+        }
+        return best;
+      });
+      const used = [...new Set(assign.filter((x) => x >= 0))];
+      const tr = travelOf(used);
+      let score = Math.round(tr.km * costPerKm);
+      const parts = [];
+      for (const vi of used) {
+        const v = visits[vi];
+        const lines = assign.map((a, i) => (a === vi ? { ...cost[i][vi], item: items[i] } : null)).filter(Boolean);
+        const subtotal = lines.reduce((a, l) => a + l.net, 0);
+        const pay = paymentDiscount(stores[v.si].id, subtotal, v.day, ctx);
+        score += subtotal - pay.discount;
+        parts.push({ storeId: stores[v.si].id, day: v.day, lines, gross: lines.reduce((a, l) => a + l.gross, 0), subtotal, payment: pay, total: subtotal - pay.discount });
+      }
+      const missing = assign.filter((a) => a < 0).length;
+      score += missing * PENALTY;
+      return { set: used, parts, score, missing, km: tr.km, routes: tr.routes, assign, feasible: tr.km <= maxKm + 1e-9 };
+    };
+    // 1) la mejor visita única factible
+    let cur = null;
+    visits.forEach((_, vi) => {
+      const e = evaluate([vi]);
+      if (e.feasible && (!cur || e.score < cur.score)) cur = e;
     });
-    if (!bestNext) break;
-    current = bestNext;
+    if (!cur) return null;
+    // 2) agregar visitas mientras baje el puntaje y se respeten los topes
+    const improve = () => {
+      let changed = false;
+      if (cur.set.length < maxStores) {
+        let bestNext = null;
+        visits.forEach((_, vi) => {
+          if (cur.set.includes(vi)) return;
+          const e = evaluate([...cur.set, vi]);
+          if (e.feasible && e.set.length <= maxStores && e.score < cur.score - 1 && (!bestNext || e.score < bestNext.score)) bestNext = e;
+        });
+        if (bestNext) (cur = bestNext), (changed = true);
+      }
+      // 3) intercambiar una visita por otra si mejora
+      let bestSwap = null;
+      cur.set.forEach((out) => {
+        visits.forEach((_, vi) => {
+          if (cur.set.includes(vi)) return;
+          const e = evaluate([...cur.set.filter((x) => x !== out), vi]);
+          if (e.feasible && e.score < cur.score - 1 && (!bestSwap || e.score < bestSwap.score)) bestSwap = e;
+        });
+      });
+      if (bestSwap) (cur = bestSwap), (changed = true);
+      return changed;
+    };
+    for (let guard = 0; guard < 12 && improve(); guard++);
+    const missingItems = items.filter((_, i) => cur.assign[i] < 0);
+    const parts = cur.parts.sort((a, b) => a.day - b.day || b.total - a.total || byId(a.storeId, b.storeId));
+    const total = parts.reduce((a, p) => a + p.total, 0);
+    const travel = Math.round(cur.km * costPerKm);
+    return { days: [...new Set(parts.map((p) => p.day))], parts, total, km: cur.km, travel, routes: cur.routes, missing: missingItems, complete: missingItems.length === 0, score: total + travel };
+  };
+  if (splitDays) {
+    const p = plan(days);
+    return { best: p, byDay: null };
   }
-  const missingItems = items.filter((_, i) => current.assign[i] < 0);
-  const parts = current.parts.sort((a, b) => b.total - a.total || byId(a.storeId, b.storeId));
-  const total = parts.reduce((a, p) => a + p.total, 0);
-  const travelTotal = parts.reduce((a, p) => a + p.travel, 0);
-  return { day, parts, total, travel: travelTotal, missing: missingItems, complete: missingItems.length === 0 };
+  const byDay = new Map();
+  for (const d of days) byDay.set(d, plan([d]));
+  let best = null;
+  for (const p of byDay.values()) if (p && p.complete && (!best || p.score < best.score)) best = p;
+  if (!best) for (const p of byDay.values()) if (p && (!best || p.missing.length < best.missing.length)) best = p;
+  return { best, byDay };
 }
 
 /**
  * CU-03 pasos 4 a 7 (y A-2): calcula todas las combinaciones comercio × día.
- * params: { items, point, radiusKm, days, usePayments, payments, excluded, multi, costPerKm }
+ * params: { items, point, radiusKm, days, usePayments, payments, excluded, multi, splitDays, maxStores, maxKm, costPerKm }
  */
 export async function optimize(params) {
   const t0 = performance.now();
@@ -201,10 +268,7 @@ export async function optimize(params) {
     if (b && (!bestOverall || b.total < bestOverall.total)) bestOverall = b;
   }
   let multi = null;
-  if (params.multi) {
-    multi = new Map();
-    for (const d of days) multi.set(d, multiStorePlan(params.items, d, ctx, params.costPerKm ?? 250));
-  }
+  if (params.multi) multi = splitPlan(params.items, ctx, { days, splitDays: !!params.splitDays, maxStores: params.maxStores ?? 3, maxKm: params.maxKm ?? 10, costPerKm: params.costPerKm ?? 250 });
   return { ctx, days, matrix, byDay, byStore, bestOverall, multi, elapsedMs: Math.round(performance.now() - t0) };
 }
 

@@ -1,4 +1,4 @@
-// Servicio de listas: versionado incremental (RF-01) y sustitución de marca (CU-05 / RF-17).
+// Servicio de listas: versionado incremental (RF-01) y sustitución de marca (CU-05 / RF-16).
 import * as UD from '../core/userdata.js';
 import * as Cat from '../data/catalog.js';
 

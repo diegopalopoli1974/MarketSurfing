@@ -1,12 +1,13 @@
-// CU-08 Reportar Precios y Stock en Góndola (actor: Colaborador nivel 1 o superior).
+// CU-07 Reportar Precios y Stock en Góndola (actor: Colaborador nivel 1 o superior).
 import { h, icon, clear } from '../ui/dom.js';
-import { pageHeader, card, empty, toast, steps, field, setBusy } from '../ui/components.js';
+import { pageHeader, card, empty, toast, steps, field, setBusy, confirmDialog } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
 import * as UD from '../core/userdata.js';
 import * as Cat from '../data/catalog.js';
 import * as Geo from '../core/geo.js';
 import { interpret } from '../core/nlp.js';
 import { money, volumeCost } from '../core/engine.js';
+import { dayKey } from '../data/demo-seed.js';
 import { session, addPoints, POINT_RULES, collabLevel } from '../app/session.js';
 import { HELP } from '../ui/help.js';
 import * as Alerts from '../app/alerts.js';
@@ -16,12 +17,12 @@ const GEOFENCE_M = 50;
 export async function render() {
   const profile = UD.get('profile');
   if (collabLevel() < 1)
-    return h('div', { class: 'page' }, pageHeader('Reportar en góndola', { help: HELP.gondola }), empty('shield', 'Función para Colaboradores', 'Para reportar en góndola tenés que ser Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-08 · precondición'));
+    return h('div', { class: 'page' }, pageHeader('Reportar en góndola', { help: HELP.gondola }), empty('shield', 'Función para Colaboradores', 'Para reportar en góndola tenés que ser Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-07 · precondición'));
 
   const simulate = !!profile.prefs.simulatePresence;
   const root = h('div', { class: 'page' }, pageHeader('Reportar en góndola', { subtitle: 'Precio, promoción y stock, por voz o texto (sin fotos)', help: HELP.gondola }));
   const stage = h('div');
-  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-08 · pasos 1–10 · A-1 · A-2 · A-3 · E-1 · E-2'));
+  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-07 · pasos 1–11 · A-1 · A-2 · A-3 · A-4 · E-1'));
 
   // Paso 1: seleccionar sucursal
   const step1 = () => {
@@ -70,7 +71,7 @@ export async function render() {
 
   const fail = (store, msg) => {
     // E-1
-    clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'No se puede reportar'), h('span', {}, msg))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Elegir otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step2(store) }, 'Reintentar')), steps('CU-08 · E-1')));
+    clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'No se puede reportar'), h('span', {}, msg))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Elegir otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step2(store) }, 'Reintentar')), steps('CU-07 · E-1')));
   };
 
   // Paso 4: dictado o texto libre
@@ -132,7 +133,7 @@ export async function render() {
           if (stock.value !== 'out' && !pv) return toast('Ingresá el precio', 'info');
           review(store, { ...r, product, price: pv, stock: stock.value, promo: promo.value ? parsePromoLabel(promo.value) : null, confidence: 1, assisted: true });
         } }, 'Continuar')),
-        steps('CU-08 · A-1')
+        steps('CU-07 · A-1')
       )
     );
   };
@@ -159,18 +160,21 @@ export async function render() {
     const act = UD.get('activity');
     const today = new Date().toDateString();
     const status = { incidents: [], points: 0, review: false };
-    // Paso 7 / E-2: rango plausible
+    // A-4: precio muy distinto del de referencia (posible error de tipeo): se pide confirmación; si se confirma se registra sin puntos
+    let outOfRange = false;
     if (r.price && ref && (r.price < ref * 0.4 || r.price > ref * 2.5)) {
-      status.review = true;
-      act.reports.unshift({ ts: Date.now(), storeId: store.id, productId: r.product.id, price: r.price, status: 'en revisión' });
-      await UD.save('activity');
-      await Cat.logReport({ storeId: store.id, productId: r.product.id, status: 'revision' });
-      clear(stage).append(card(h('div', { class: 'banner warn' }, icon('alert'), h('div', {}, h('strong', {}, 'Reporte en revisión'), h('span', {}, `El precio ${money(r.price)} está fuera del rango plausible (referencia ${money(ref)}). No suma puntos.`))), h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: () => step4(store) }, 'Nuevo reporte')), steps('CU-08 · E-2')));
-      return;
+      const okIt = await confirmDialog('Precio muy distinto', `${money(r.price)} está muy lejos del precio de referencia (${money(ref)}). ¿Es correcto? Si lo confirmás se registra, pero no suma puntos.`, { ok: 'Sí, es correcto', cancel: 'Corregir' });
+      if (!okIt) {
+        setBusy(btn, false);
+        return step4(store);
+      }
+      outOfRange = true;
     }
     // Paso 8: registrar como vigente
     if (r.price) await Cat.recordPrice({ storeId: store.id, productId: r.product.id, price: Math.round(r.price), source: simulate ? 'gondola-sim' : 'gondola' });
     await Cat.setStock(store.id, r.product.id, r.stock === 'out');
+    // la promoción vista en góndola queda vigente 7 días para ese producto y comercio
+    if (r.promo && !r.issuer && r.stock !== 'out') await Cat.addPromo({ id: `gon-${store.id}-${r.product.id}`, storeId: store.id, chainId: null, productId: r.product.id, days: null, until: dayKey(new Date(Date.now() + 7 * 86400000)), source: 'gondola', label: `${r.promo.label} en ${r.product.name} (vista en góndola)`, ...promoFields(r.promo) });
     // A-2: promoción o precio distinto de lo publicado
     const priceDiffers = cur && r.price && Math.abs(r.price - cur.price) / cur.price > 0.03;
     const promoDiffers = (r.promo && !published) || (!r.promo && published && r.stock !== 'out');
@@ -186,8 +190,8 @@ export async function render() {
     // Puntos con topes antifraude (reglas públicas)
     const todays = act.reports.filter((x) => new Date(x.ts).toDateString() === today && x.points > 0).length;
     const recentSame = act.reports.some((x) => x.storeId === store.id && x.productId === r.product.id && Date.now() - x.ts < POINT_RULES.mismaSucursalProductoHoras * 3600000);
-    if (!simulate && todays < POINT_RULES.topeReportesDia && !recentSame) status.points = POINT_RULES.reporte + (status.incidents.length ? POINT_RULES.reporteConIncidencia : 0);
-    act.reports.unshift({ ts: Date.now(), storeId: store.id, productId: r.product.id, price: r.price, stock: r.stock, status: 'vigente', points: status.points, incidents: status.incidents.length });
+    if (!simulate && !outOfRange && todays < POINT_RULES.topeReportesDia && !recentSame) status.points = POINT_RULES.reporte + (status.incidents.length ? POINT_RULES.reporteConIncidencia : 0);
+    act.reports.unshift({ ts: Date.now(), storeId: store.id, productId: r.product.id, price: r.price, promo: r.promo?.label || null, stock: r.stock, status: 'vigente', points: status.points, incidents: status.incidents.length });
     act.reports = act.reports.slice(0, 300);
     await UD.save('activity');
     if (status.points) await addPoints(status.points, `Reporte en ${store.name}`);
@@ -198,9 +202,10 @@ export async function render() {
     // Paso 10
     clear(stage).append(
       card(
-        h('div', { class: 'banner good' }, icon('check'), h('div', {}, h('strong', {}, 'Reporte registrado'), h('span', {}, status.points ? `Sumaste ${status.points} puntos (total ${UD.get('activity').points}).` : simulate ? 'Presencia simulada: sin puntos.' : recentSame ? 'Ya reportaste este producto aquí hace poco: sin puntos.' : 'Alcanzaste el tope diario de puntos.'))),
+        h('div', { class: 'banner good' }, icon('check'), h('div', {}, h('strong', {}, 'Reporte registrado'), h('span', {}, status.points ? `Sumaste ${status.points} puntos (total ${UD.get('activity').points}).` : simulate ? 'Presencia simulada: sin puntos.' : outOfRange ? 'Precio fuera del rango habitual confirmado: se registró sin puntos.' : recentSame ? 'Ya reportaste este producto aquí hace poco: sin puntos.' : 'Alcanzaste el tope diario de puntos.'))),
         status.incidents.length ? h('ul', { class: 'bullets' }, status.incidents.map((i) => h('li', {}, i))) : null,
-        h('p', { class: 'muted small' }, `Reputación de ${store.name}: ${rep.score}/100 (${rep.incidents} incidencia(s) en 90 días).`),
+        h('p', { class: 'muted small' }, `Reputación de ${store.name}: ${rep.score}/100 (${rep.incidents} incidencia(s) en 90 días). Se muestra en los resultados de búsqueda y en el detalle de cada comercio.`),
+        r.promo && !r.issuer && r.stock !== 'out' ? h('p', { class: 'muted small' }, `La promoción «${r.promo.label}» queda aplicada en las búsquedas durante 7 días.`) : null,
         h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step4(store) }, 'Reportar otro producto'))
       )
     );
@@ -208,6 +213,11 @@ export async function render() {
 
   step1();
   return root;
+}
+
+function promoFields(p) {
+  const { type, n, m, pct } = p;
+  return { type, ...(n ? { n, m } : {}), ...(pct ? { pct } : {}) };
 }
 
 function parsePromoLabel(v) {

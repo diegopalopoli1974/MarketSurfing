@@ -362,11 +362,20 @@ dialog { color: var(--ink); }
 
 /* ---------- Mapa ---------- */
 .map { position: relative; margin: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
-.map-svg { display: block; width: 100%; height: auto; touch-action: manipulation; }
+.map-svg { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; user-select: none; }
+.map-svg.pickable { cursor: crosshair; }
+.map-tiles image { opacity: 0.92; }
+@media (prefers-color-scheme: dark) { .map-tiles image { filter: brightness(0.75) contrast(1.1) saturate(0.7); } }
+.map-label { font-size: 12px; font-weight: 700; fill: #1b2a2e; paint-order: stroke; stroke: rgba(255, 255, 255, 0.92); stroke-width: 3.5px; pointer-events: none; }
+.map-zone { fill: var(--accent); fill-opacity: 0.14; stroke: var(--accent); stroke-width: 2; }
+.map-zone-center { fill: var(--accent); }
+.map-attrib { position: absolute; left: 6px; top: 6px; font-size: 0.68rem; background: rgba(255, 255, 255, 0.85); color: #333; padding: 0 4px; border-radius: 3px; }
+.map-attrib a { color: inherit; }
+.map.offline .map-attrib::after { content: ' · sin conexión: mapa simplificado'; }
 .map-bg { fill: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
 .map-ring { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
 .map-ring-edge { stroke: var(--accent); stroke-dasharray: none; stroke-width: 1.5; }
-.map-ring-label { font-size: 9px; fill: var(--muted); }
+.map-ring-label { font-size: 11px; font-weight: 600; paint-order: stroke; stroke: rgba(255,255,255,0.8); stroke-width: 3px; fill: var(--muted); }
 .map-axis { stroke: var(--line); stroke-width: 0.5; }
 .map-me { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .map-me-halo { fill: var(--accent); opacity: 0.18; }
@@ -378,7 +387,7 @@ dialog { color: var(--ink); }
 .map-marker:focus-visible .map-dot { stroke: var(--sun); stroke-width: 3; }
 .map-dot-text { font-size: 11px; font-weight: 800; fill: #fff; text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.35); stroke-width: 2px; pointer-events: none; }
 .map-dot-text.dark { fill: var(--bad); stroke: none; }
-.map-note { font-size: 9px; fill: var(--muted); }
+.map-note { font-size: 11px; fill: var(--muted); }
 .map-zoom { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; gap: 4px; }
 .map-zoom .icon-btn { background: var(--surface); box-shadow: var(--shadow); min-width: 38px; min-height: 38px; }
 .map figcaption { font-size: 0.78rem; color: var(--muted); padding: 0.4rem 0.7rem; border-top: 1px solid var(--line); }
@@ -516,5 +525,33 @@ dialog { color: var(--ink); }
   .sheet { max-width: 420px; margin: auto auto 0 240px; border-radius: 22px 22px 0 0; }
   .tiles { grid-template-columns: repeat(4, 1fr); }
   .hero h1 { max-width: none; }
-  .map { max-width: 640px; }
+  .map { max-width: 900px; }
 }
+
+/* ---- Búsqueda: reparto, tabla comercio × día y beneficios ---- */
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.6rem; }
+.res-benefits { color: var(--accent) !important; }
+.explain { border: 1px solid var(--line); border-radius: 12px; padding: 0.5rem 0.8rem; background: var(--surface-2); }
+.explain summary { cursor: pointer; font-weight: 600; }
+.explain p, .explain li { font-size: 0.9rem; }
+.matrix-wrap { overflow-x: auto; margin: 0.6rem 0; border: 1px solid var(--line); border-radius: var(--radius); }
+.matrix { min-width: 640px; margin: 0; }
+.matrix caption { caption-side: top; text-align: left; font-size: 0.8rem; color: var(--muted); padding: 0.5rem 0.7rem; }
+.matrix th[scope='row'] { position: sticky; left: 0; background: var(--surface); min-width: 160px; text-align: left; z-index: 1; }
+.matrix td { padding: 3px; }
+.cell-btn { width: 100%; min-height: 48px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 0.85rem; font-variant-numeric: tabular-nums; cursor: pointer; padding: 0.25rem 0.35rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.cell-btn:hover { background: var(--surface-2); }
+.cell-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.row-best .cell-btn { font-weight: 800; border-width: 2.5px; }
+.col-best .cell-btn { box-shadow: inset 0 -3px 0 var(--accent); }
+.cell-inc .cell-btn { color: var(--bad); border-style: dashed; font-weight: 800; }
+.unsaved-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.8rem; border-radius: 12px; background: #fff3cd; color: #5c4400; border: 1px solid #e6c65c; font-weight: 600; margin-bottom: 0.6rem; }
+.unsaved-bar[hidden] { display: none !important; }
+.saved-state { font-size: 0.85rem; color: var(--muted); }
+.zone-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.zone-list li { display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; border: 1px solid var(--line); border-radius: 12px; padding: 0.4rem 0.6rem; }
+.zone-list .input { width: 90px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; margin: 0.6rem 0; }
+.kpi { border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem; background: var(--surface); }
+.kpi strong { display: block; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); }

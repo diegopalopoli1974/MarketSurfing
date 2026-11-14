@@ -3,6 +3,7 @@
 const VERSION = '__VERSION__';
 const CACHE = `ms-shell-${VERSION}`;
 const RUNTIME = 'ms-runtime-v1';
+const TILES = 'ms-tiles-v1';
 const FILES = __FILES__;
 
 self.addEventListener('install', (e) => {
@@ -19,6 +20,23 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (url.hostname === 'tile.openstreetmap.org') {
+    // teselas del mapa: se guardan las vistas recientemente para verlas sin conexión (máx. 800)
+    e.respondWith(
+      caches.open(TILES).then(async (c) => {
+        const hit = await c.match(req);
+        if (hit) return hit;
+        const res = await fetch(req);
+        if (res.ok || res.type === 'opaque') {
+          await c.put(req, res.clone());
+          const keys = await c.keys();
+          if (keys.length > 800) await Promise.all(keys.slice(0, keys.length - 800).map((k) => c.delete(k)));
+        }
+        return res;
+      })
+    );
+    return;
+  }
   if (url.origin !== self.location.origin) return; // p. ej. búsqueda de direcciones: siempre en línea
   if (req.mode === 'navigate') {
     e.respondWith(caches.match('./index.html', { ignoreSearch: true }).then((r) => r || fetch(req)));

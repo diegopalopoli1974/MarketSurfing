@@ -19,14 +19,14 @@ export function rng(seedStr) {
 }
 
 export const CHAINS = [
-  { id: 'carrefour', name: 'Carrefour', factor: 0.98, online: true, platform: 'vtex', host: 'www.carrefour.com.ar' },
-  { id: 'coto', name: 'Coto', factor: 1.0, online: true, platform: 'propia', host: 'www.cotodigital.com.ar' },
-  { id: 'dia', name: 'Día', factor: 0.93, online: true, platform: 'vtex', host: 'diaonline.supermercadosdia.com.ar' },
-  { id: 'jumbo', name: 'Jumbo', factor: 1.08, online: true, platform: 'vtex', host: 'www.jumbo.com.ar' },
-  { id: 'disco', name: 'Disco', factor: 1.06, online: true, platform: 'vtex', host: 'www.disco.com.ar' },
-  { id: 'vea', name: 'Vea', factor: 0.97, online: true, platform: 'vtex', host: 'www.vea.com.ar' },
-  { id: 'changomas', name: 'ChangoMás', factor: 0.95, online: true, platform: 'vtex', host: 'www.masonline.com.ar' },
-  { id: 'barrio', name: 'Autoservicio de barrio', factor: 1.01, online: false, platform: null, host: null },
+  { id: 'carrefour', name: 'Carrefour', factor: 0.98 },
+  { id: 'coto', name: 'Coto', factor: 1.0 },
+  { id: 'dia', name: 'Día', factor: 0.93 },
+  { id: 'jumbo', name: 'Jumbo', factor: 1.08 },
+  { id: 'disco', name: 'Disco', factor: 1.06 },
+  { id: 'vea', name: 'Vea', factor: 0.97 },
+  { id: 'changomas', name: 'ChangoMás', factor: 0.95 },
+  { id: 'barrio', name: 'Autoservicio de barrio', factor: 1.01 },
 ];
 
 // [clave, nombre genérico, rubro, presentación, cantidad, unidad, precio base, [[marca, multiplicador], ...]]

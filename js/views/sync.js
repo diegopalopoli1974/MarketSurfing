@@ -1,4 +1,4 @@
-// CU-10 Sincronizar Precios Abiertos y Catálogos de APIs (Administrador / Planificador de tareas).
+// CU-09 Sincronizar Precios Abiertos y Catálogos de APIs (Administrador / Planificador de tareas).
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, steps, field, setBusy, confirmDialog } from '../ui/components.js';
@@ -77,6 +77,6 @@ export async function render({ rerender }) {
         location.reload();
       } }, 'Restablecer'))
     ),
-    steps('CU-10 · pasos 1–7 · E-1')
+    steps('CU-09 · pasos 1–7 · E-1')
   );
 }

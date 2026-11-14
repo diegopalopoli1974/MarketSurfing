@@ -1,4 +1,4 @@
-// "Servicio de Visión OCR" de CU-09: Tesseract.js ejecutado localmente si está instalado en /vendor/tesseract/.
+// "Servicio de Visión OCR" de CU-08: Tesseract.js ejecutado localmente si está instalado en /vendor/tesseract/.
 // Si no está, la app lo informa y se usa el formulario asistido (la auditoría funciona igual).
 import { sha256Hex } from './crypto.js';
 
@@ -134,9 +134,10 @@ export async function audit(t, isDuplicate) {
     else if (age < -0.05) issues.push('La fecha del ticket es futura');
     else if (age > MAX_TICKET_AGE_DAYS) issues.push(`El ticket tiene más de ${MAX_TICKET_AGE_DAYS} días (fuera de fecha)`);
   }
-  const sum = t.items.reduce((a, i) => a + i.amount, 0);
+  // suma de ítems menos descuentos por promociones y del medio de pago = total
+  const sum = t.items.reduce((a, i) => a + i.amount - (i.discount || 0), 0) - (t.payDiscount || 0);
   if (!(t.total > 0)) issues.push('Falta el total');
-  else if (Math.abs(sum - t.total) > Math.max(2, t.total * 0.005)) issues.push(`Total incoherente: la suma de ítems da $ ${Math.round(sum).toLocaleString('es-AR')} y el total es $ ${Math.round(t.total).toLocaleString('es-AR')}`);
+  else if (Math.abs(sum - t.total) > Math.max(2, t.total * 0.005)) issues.push(`Total incoherente: ítems menos descuentos da $ ${Math.round(sum).toLocaleString('es-AR')} y el total es $ ${Math.round(t.total).toLocaleString('es-AR')}`);
   const fingerprint = await sha256Hex(['ticket', t.storeId, t.cuit || '', t.date, t.time || '', Math.round(t.total || 0), t.items.length, t.items.map((i) => Math.round(i.amount)).join(',')].join('|'));
   if (await isDuplicate(fingerprint)) issues.push('Este ticket ya fue cargado (duplicado)');
   return { ok: !issues.length, issues, fingerprint, sum };

@@ -1,7 +1,8 @@
-// CU-12 Cargar Comercios, Productos y Precios en forma manual (Colaborador nivel 2 / Administrador).
+// CU-11 Cargar Comercios, Productos y Precios en forma manual (Colaborador nivel 2 / Administrador).
+// El alta de comercio (A-1) y de producto (A-2) se hace dentro de la carga del precio y vuelve al paso 2 con lo nuevo elegido.
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
-import { pageHeader, card, empty, toast, field, steps, setBusy, confirmDialog, chip } from '../ui/components.js';
+import { pageHeader, card, empty, toast, field, steps, setBusy, confirmDialog, chip, modal } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
 import * as Cat from '../data/catalog.js';
 import * as Geo from '../core/geo.js';
@@ -53,26 +54,24 @@ async function log(entry) {
 export async function render({ query }) {
   if (collabLevel() < 2)
     return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { help: HELP.catalog }), empty('lock', 'Función para Colaboradores nivel 2', 'La carga manual de comercios, productos y precios la hacen los Colaboradores nivel 2 y el Administrador. El nivel 2 lo otorga el Administrador desde «Seguridad y cuenta».'), steps('CU-12 · precondición'));
-  let tab = query.get('t') || 'precio';
+  let tab = query.get('t') === 'mias' ? 'mias' : 'precio';
   const tabs = h('div', { class: 'tabs', role: 'tablist' });
   const body = h('div');
   const draw = () => {
     clear(tabs);
     for (const [id, label, ic, tip] of [
-      ['precio', 'Precio', 'ticket', 'Registrar el precio (y la promoción) de un producto en un comercio'],
-      ['comercio', 'Comercio', 'store', 'Dar de alta una sucursal que no está en el catálogo'],
-      ['producto', 'Producto', 'star', 'Dar de alta un producto o una marca que no está en el catálogo'],
-      ['mias', 'Mis cargas', 'list', 'Ver y eliminar lo que cargaste'],
+      ['precio', 'Cargar precio', 'ticket', 'Registrar el precio (y la promoción) de un producto en un comercio; si el comercio o el producto no existen, los das de alta en el mismo paso'],
+      ['mias', isAdmin() ? 'Cargas manuales' : 'Mis cargas', 'list', 'Ver y eliminar lo que se cargó a mano'],
     ])
       tabs.append(h('button', { role: 'tab', class: ['tab', tab === id && 'active'], 'aria-selected': tab === id ? 'true' : 'false', 'data-tip': tip, onclick: () => ((tab = id), draw()) }, icon(ic, { size: 18 }), label));
-    Promise.resolve(tab === 'precio' ? priceForm() : tab === 'comercio' ? storeForm(() => ((tab = 'precio'), draw())) : tab === 'producto' ? productForm() : myLoads(draw)).then((el) => clear(body).append(el));
+    Promise.resolve(tab === 'precio' ? priceForm() : myLoads(draw)).then((el) => clear(body).append(el));
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Comercios, productos y precios cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-12 · Gestionar catálogo manual'));
+  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-11 · pasos 1–7 · A-1 · A-2 · A-3 · E-1 · E-2'));
 }
 
 // ---------- Selector de sucursal ----------
-function storePicker(onPick, selected) {
+function storePicker(onPick, selected, onNew) {
   const q = h('input', { class: 'input', type: 'search', placeholder: 'Buscar por cadena, barrio, localidad o dirección', 'data-tip': 'Escribí parte del nombre de la cadena, el barrio o la dirección' });
   const list = h('ul', { class: 'pick-list compact' });
   const chosen = h('p', { class: 'loc-chosen' }, selected ? `Elegido: ${selected.name}` : 'Ningún comercio elegido');
@@ -85,7 +84,7 @@ function storePicker(onPick, selected) {
         q.value = '';
         onPick(s);
       } }, icon('store', { size: 18 }), h('span', {}, h('strong', {}, s.name), h('small', {}, `${s.address}${s.barrio ? ` · ${s.barrio}` : ''}${s.dist != null ? ` · ${Geo.fmtDistance(s.dist)}` : ''}`)))));
-    if (!stores.length && q.value.trim()) list.append(h('li', { class: 'muted pad' }, 'No está en el catálogo: podés darlo de alta en la pestaña «Comercio».'));
+    if (!stores.length && q.value.trim()) list.append(h('li', { class: 'muted pad' }, 'No está en el catálogo: usá «Nuevo comercio».'));
   };
   q.addEventListener('input', () => {
     const n = norm(q.value.trim());
@@ -99,7 +98,14 @@ function storePicker(onPick, selected) {
       toast(e.message, 'error');
     }
   } }, icon('gps', { size: 16 }), 'Más cercanos');
-  return h('div', { class: 'stack' }, q, h('div', { class: 'row' }, near), list, chosen);
+  const pick = (s) => {
+    chosen.textContent = `Elegido: ${s.name} — ${s.address}`;
+    clear(list);
+    q.value = '';
+    onPick(s);
+  };
+  const el = h('div', { class: 'stack' }, q, h('div', { class: 'row' }, near, onNew ? h('button', { type: 'button', class: 'btn btn-secondary btn-sm', 'data-tip': 'El comercio no está en el catálogo: darlo de alta y seguir con el precio (A-1)', onclick: () => onNew(pick) }, icon('plus', { size: 16 }), 'Nuevo comercio') : null), list, chosen);
+  return el;
 }
 
 // ---------- Precio ----------
@@ -138,6 +144,7 @@ function priceForm() {
     if (!st.product) return (err.textContent = 'Elegí el producto');
     if (!(v > 0 && v < 50_000_000)) return (err.textContent = 'Ingresá un precio válido');
     const prev = await Cat.currentPrice(st.store.id, st.product.id);
+    if (date.value > dayKey()) return (err.textContent = 'La fecha no puede ser futura');
     if (prev && (v < prev.price * 0.3 || v > prev.price * 3)) {
       if (!(await confirmDialog('Precio muy distinto', `El precio vigente es ${money(prev.price)}. ¿Confirmás ${money(v)}?`, { ok: 'Sí, es correcto' }))) return;
     }
@@ -150,15 +157,15 @@ function priceForm() {
     await log({ what: 'precio', storeId: st.store.id, productId: st.product.id, label: `${st.product.name} · ${money(v)} en ${st.store.name}${promo.value ? ` · ${promo.value}` : ''}` });
     await Alerts.evaluate([{ storeId: st.store.id, productId: st.product.id, price: Math.round(v), prev: prev?.price }]);
     setBusy(save, false);
-    toast('Precio registrado como nueva versión', 'ok');
+    toast('Precio registrado como nueva versión. Quedó en «Mis cargas».', 'ok');
     price.value = '';
     promo.value = '';
     refreshCurrent();
   } }, icon('check'), 'Guardar precio');
   return card(
     h('h2', { class: 'h3' }, 'Registrar un precio'),
-    field('Comercio', storePicker((s) => ((st.store = s), refreshCurrent()))),
-    field('Producto', prodBtn, null, 'Si el producto o la marca no existen, primero dalos de alta en la pestaña «Producto».'),
+    field('Comercio', storePicker((s) => ((st.store = s), refreshCurrent()), null, (pick) => newEntityModal('Nuevo comercio', (done) => storeForm(done), pick))),
+    field('Producto', h('div', { class: 'stack' }, prodBtn, h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-secondary btn-sm', 'data-tip': 'El producto o la marca no están en el catálogo: darlos de alta y seguir con el precio (A-2)', onclick: () => newEntityModal('Nuevo producto', (done) => productForm(done), (p) => ((st.product = p), clear(prodBtn).append(icon('edit', { size: 18 }), p.name), refreshCurrent())) }, icon('plus', { size: 16 }), 'Nuevo producto'))), null, 'Buscá el producto; si no existe, dalo de alta con «Nuevo producto».'),
     current,
     h('div', { class: 'grid2' }, field('Precio de lista ($)', price, null, 'El precio de góndola por unidad, sin descuentos.'), field('Fecha del precio', date, null, 'Cuándo viste o confirmaste el precio. No puede ser futura.')),
     field('Promoción (opcional)', promo, null, 'Oferta del comercio para este producto. Se aplica en las búsquedas a partir de ahora.'),
@@ -216,7 +223,7 @@ function storeForm(afterSave) {
       const existing = Cat.chains().find((c) => norm(c.name) === norm(name));
       if (existing) chain = existing;
       else {
-        chain = { id: `man-${slug(name)}-${Date.now().toString(36)}`, name, factor: 1, online: false, platform: null, host: null, manual: true };
+        chain = { id: `man-${slug(name)}-${Date.now().toString(36)}`, name, factor: 1, manual: true };
         await Cat.addChains([chain]);
       }
       chainId = chain.id;
@@ -230,11 +237,12 @@ function storeForm(afterSave) {
     const store = { id: `man-${crypto.randomUUID().slice(0, 8)}`, chainId, name: `${chain.name} ${branch.value.trim() || locality || ''}`.trim(), lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)), address: addrText.split(',')[0], barrio: locality, manual: true, createdBy: session.reporterId, createdAt: Date.now() };
     await Cat.addStores([store]);
     await log({ what: 'comercio', storeId: store.id, label: `${store.name} — ${addrText}` });
-    toast(`Comercio «${store.name}» agregado. Ahora cargale precios.`, 'ok', 5000);
-    afterSave?.();
+    toast(`Comercio «${store.name}» agregado`, 'ok', 4000);
+    afterSave?.(store);
   } }, icon('check'), 'Guardar comercio');
-  return card(
-    h('h2', { class: 'h3' }, 'Dar de alta un comercio'),
+  return h(
+    'div',
+    { class: 'stack' },
     field('Cadena', chainSel, null, 'Si es una sucursal de una cadena conocida, elegila: así comparte las promociones bancarias de la cadena.'),
     newChainWrap,
     field('Nombre de la sucursal (opcional)', branch, 'Si lo dejás vacío se usa la localidad'),
@@ -255,7 +263,7 @@ function storeForm(afterSave) {
 }
 
 // ---------- Producto ----------
-function productForm() {
+function productForm(afterSave) {
   const gens = Cat.generics().sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const cats = Cat.categories();
   let mode = 'existing';
@@ -322,11 +330,20 @@ function productForm() {
     const product = { id: code, ...base, brand: b, name: b === 'Sin marca' ? `${base.genericName} ${base.presentation}` : `${base.genericName} ${b} ${base.presentation}`, basePrice: 0, brandMult: 1, manual: true, createdBy: session.reporterId, createdAt: Date.now() };
     await Cat.addProducts([product]);
     await log({ what: 'producto', productId: product.id, label: `${product.name} (EAN ${product.id})` });
-    toast(`Producto «${product.name}» agregado. Cargale precios en la pestaña «Precio».`, 'ok', 5000);
-    brand.value = '';
-    ean.value = '';
+    toast(`Producto «${product.name}» agregado`, 'ok', 4000);
+    afterSave?.(product);
   } }, icon('check'), 'Guardar producto');
-  return card(h('h2', { class: 'h3' }, 'Dar de alta un producto'), modeSel, existingBox, newBox, field('Marca', brand), field('Código de barras (opcional)', ean, 'Si no lo cargás se genera un código interno.', 'EAN-13 de la etiqueta. Se valida el dígito verificador.'), err, h('div', { class: 'row end' }, save));
+  return h('div', { class: 'stack' }, modeSel, existingBox, newBox, field('Marca', brand), field('Código de barras (opcional)', ean, 'Si no lo cargás se genera un código interno.', 'EAN-13 de la etiqueta. Se valida el dígito verificador.'), err, h('div', { class: 'row end' }, save));
+}
+
+/** A-1 / A-2: alta de comercio o producto en un diálogo; al guardar vuelve al paso 2 con lo nuevo elegido. */
+function newEntityModal(title, build, onDone) {
+  let m;
+  const content = build((entity) => {
+    m.close();
+    onDone(entity);
+  });
+  m = modal({ title, wide: true, content: h('div', {}, content, steps(title === 'Nuevo comercio' ? 'CU-11 · A-1' : 'CU-11 · A-2')) });
 }
 
 // ---------- Mis cargas ----------

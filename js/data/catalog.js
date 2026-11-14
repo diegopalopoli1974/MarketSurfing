@@ -142,7 +142,8 @@ export const categories = () => [...new Set(products().map((p) => p.category))].
 export function promosForStore(storeId) {
   const s = mem.stores.get(storeId);
   if (!s) return [];
-  return mem.promos.filter((p) => (p.storeId ? p.storeId === storeId : p.chainId === s.chainId));
+  const today = Seed.dayKey();
+  return mem.promos.filter((p) => (p.storeId ? p.storeId === storeId : p.chainId === s.chainId) && (!p.until || p.until >= today));
 }
 
 export async function currentForStores(storeIds) {
@@ -264,7 +265,7 @@ export async function replacePromos(filterFn, newPromos) {
 }
 export const promos = () => mem.promos;
 
-// ---------- Incidencias y reputación (RF-20, reglas públicas RNF-12) ----------
+// ---------- Incidencias y reputación (RF-19, reglas públicas RNF-12) ----------
 export const REPUTATION_RULES = {
   base: 100,
   faltanteConfirmado: 8,
@@ -331,7 +332,7 @@ export async function resetAll() {
   await txDone(tx);
 }
 
-// ---------- Carga manual (CU-12: Colaborador nivel 2 / Administrador) ----------
+// ---------- Carga manual (CU-11: Colaborador nivel 2 / Administrador) ----------
 export async function addPromo(promo) {
   await db.put('promos', promo);
   mem.promos = [...mem.promos.filter((p) => p.id !== promo.id), promo];

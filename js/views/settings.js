@@ -1,7 +1,7 @@
 // Seguridad, cuenta, preferencias y privacidad.
 import { HELP } from '../ui/help.js';
 import { h, icon } from '../ui/dom.js';
-import { pageHeader, card, toast, modal, confirmDialog, promptPassword, field, segmented, setBusy } from '../ui/components.js';
+import { pageHeader, card, toast, modal, confirmDialog, promptPassword, field, segmented, setBusy, steps } from '../ui/components.js';
 import * as Auth from '../core/auth.js';
 import * as UD from '../core/userdata.js';
 import { session, lock, applyPrefs, isAdmin, COLLAB_NAMES } from '../app/session.js';
@@ -79,7 +79,8 @@ export async function render({ query, rerender }) {
             });
             return h('li', { class: 'row space ex-row' }, h('span', {}, h('strong', {}, a.displayName), h('small', { class: 'block muted' }, `@${a.username}${a.role === 'admin' ? ' · Administrador' : ''}`)), sel);
           })
-        )
+        ),
+        steps('CU-13 · pasos 1–4 · E-1')
       )
     : null;
 
@@ -95,7 +96,7 @@ export async function render({ query, rerender }) {
         h('li', {}, 'Todo queda en este celular: no hay servidores ni copias en la nube.'),
         h('li', {}, 'Tus listas, alertas, perfil y actividad se cifran con AES-256-GCM. La clave se deriva de tu contraseña (PBKDF2-SHA256, 600.000 iteraciones) y sólo vive en memoria mientras la app está desbloqueada.'),
         h('li', {}, 'La app se bloquea sola por inactividad y al volver de segundo plano. Tras 5 intentos fallidos el ingreso se demora cada vez más.'),
-        h('li', {}, 'La ubicación se usa en el momento y no se guarda (salvo el punto de referencia que elijas para una alerta).'),
+        h('li', {}, 'La ubicación se usa en el momento y no se guarda (las alertas guardan sólo las zonas que elegís, no tu ubicación).'),
         h('li', {}, 'De los medios de pago sólo se guarda tipo y emisor; nunca números de tarjeta ni de cuenta.')
       )
     ),
@@ -141,7 +142,7 @@ export async function render({ query, rerender }) {
     ),
     card(
       h('h2', { class: 'h3' }, 'Demostración'),
-      h('label', { class: 'check' }, sim, h('span', {}, 'Simular presencia en sucursal (CU-08)', h('small', { class: 'hint block' }, 'Permite probar el reporte en góndola sin estar en el local. Los reportes simulados no suman puntos.')))
+      h('label', { class: 'check' }, sim, h('span', {}, 'Simular presencia en sucursal (CU-07)', h('small', { class: 'hint block' }, 'Permite probar el reporte en góndola sin estar en el local. Los reportes simulados no suman puntos.')))
     ),
     card(
       h('h2', { class: 'h3' }, `Puntos: ${act.points}`),

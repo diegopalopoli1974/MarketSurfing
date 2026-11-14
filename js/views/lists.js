@@ -7,6 +7,7 @@ import * as L from '../app/listsvc.js';
 import * as Cat from '../data/catalog.js';
 import * as UD from '../core/userdata.js';
 import { money, tierName } from '../core/engine.js';
+import { setLeaveGuard } from '../app/nav.js';
 
 const fmtDate = (ts) => new Date(ts).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -60,6 +61,18 @@ function editor(listId, rerender) {
   const itemsEl = h('ul', { class: 'items' });
   const errEl = h('div', { class: 'form-error', role: 'alert' });
   const estEl = h('p', { class: 'muted small' });
+  // A-4: cambios sin guardar — se comparan el nombre y los ítems con la última versión guardada
+  const snap = () => JSON.stringify({ n: nameInput.value.trim(), i: draft.map((d) => [d.generic, d.productId || null, d.qty]) });
+  let saved = snap();
+  const isDirty = () => snap() !== saved;
+  const stateEl = h('span', { class: 'saved-state' });
+  const unsavedBar = h('div', { class: 'unsaved-bar', role: 'status', hidden: true }, h('span', {}, icon('alert', { size: 18 }), ' Cambios sin guardar'), h('span', { class: 'row' }, h('button', { class: 'btn btn-ghost btn-sm', 'data-tip': 'Vuelve a la última versión guardada', onclick: () => discard() }, 'Descartar'), h('button', { class: 'btn btn-primary btn-sm', onclick: () => doSave(false) }, 'Guardar')));
+  const markDirty = () => {
+    const d = isDirty();
+    unsavedBar.hidden = !d;
+    stateEl.textContent = d ? 'Hay cambios sin guardar' : list || currentId ? 'Todo guardado' : '';
+    saveBtn.disabled = !d;
+  };
 
   const refreshEstimate = async () => {
     let total = 0;
@@ -79,7 +92,7 @@ function editor(listId, rerender) {
     clear(itemsEl);
     if (!draft.length) itemsEl.append(h('li', { class: 'muted pad' }, 'Sin productos todavía.'));
     draft.forEach((it, idx) => {
-      const qty = h('input', { type: 'number', class: 'input qty', min: 1, max: 99, step: 1, value: it.qty, inputmode: 'numeric', 'aria-label': 'Cantidad', onchange: (e) => ((it.qty = Math.trunc(Number(e.target.value))), refreshEstimate()) });
+      const qty = h('input', { type: 'number', class: 'input qty', min: 1, max: 99, step: 1, value: it.qty, inputmode: 'numeric', 'aria-label': 'Cantidad', onchange: (e) => ((it.qty = Math.trunc(Number(e.target.value))), refreshEstimate(), markDirty()) });
       const tier = it.productId ? UD.get('profile').tiers[it.productId] : null;
       itemsEl.append(
         h(
@@ -89,11 +102,11 @@ function editor(listId, rerender) {
           h(
             'div',
             { class: 'item-actions' },
-            h('button', { class: 'icon-btn', 'aria-label': 'Restar', onclick: () => ((it.qty = Math.max(1, it.qty - 1)), (qty.value = it.qty), refreshEstimate()) }, '−'),
+            h('button', { class: 'icon-btn', 'aria-label': 'Restar', onclick: () => ((it.qty = Math.max(1, it.qty - 1)), (qty.value = it.qty), refreshEstimate(), markDirty()) }, '−'),
             qty,
-            h('button', { class: 'icon-btn', 'aria-label': 'Sumar', onclick: () => ((it.qty = Math.min(99, it.qty + 1)), (qty.value = it.qty), refreshEstimate()) }, '+'),
+            h('button', { class: 'icon-btn', 'aria-label': 'Sumar', onclick: () => ((it.qty = Math.min(99, it.qty + 1)), (qty.value = it.qty), refreshEstimate(), markDirty()) }, '+'),
             Cat.productsByGeneric(it.generic).length > 1 ? h('button', { class: 'btn btn-ghost btn-sm', 'data-tip': 'Reemplazar por otra marca equivalente (CU-05)', onclick: () => changeBrand(it) }, icon('swap', { size: 18 }), 'Cambiar marca') : null,
-            h('button', { class: 'icon-btn', 'aria-label': 'Quitar', onclick: () => (draft.splice(idx, 1), renderItems(), refreshEstimate()) }, icon('trash', { size: 20 }))
+            h('button', { class: 'icon-btn', 'aria-label': 'Quitar', onclick: () => (draft.splice(idx, 1), renderItems(), refreshEstimate(), markDirty()) }, icon('trash', { size: 20 }))
           )
         )
       );
@@ -117,11 +130,15 @@ function editor(listId, rerender) {
       it.productId = choice;
       renderItems();
       refreshEstimate();
+      saved = snap();
+      markDirty();
       showSubstitutionResult(res, currentId, it.generic, () => {
         const back = L.currentItems(L.getList(currentId)).find((x) => x.generic === it.generic);
         it.productId = back?.productId || null;
         renderItems();
         refreshEstimate();
+        saved = snap();
+        markDirty();
       });
       if (!listId) history.replaceState(null, '', `#/listas/${currentId}`);
     } catch (e) {
@@ -129,28 +146,53 @@ function editor(listId, rerender) {
     }
   };
 
-  const saveBtn = h('button', {
-    class: 'btn btn-primary btn-lg',
-    onclick: async () => {
-      errEl.textContent = '';
-      try {
-        const saved = await L.saveVersion(currentId, nameInput.value, draft); // pasos 4 y 5
-        currentId = saved.id;
-        toast(`Lista guardada (versión ${L.currentVersion(saved).v})`, 'ok'); // paso 6
+  // Pasos 4 a 6: validar, guardar como nueva versión y confirmar
+  const doSave = async (leave = true) => {
+    errEl.textContent = '';
+    if (!isDirty() && currentId) {
+      toast('No hay cambios para guardar', 'info');
+      return true;
+    }
+    try {
+      const savedList = await L.saveVersion(currentId, nameInput.value, draft, list || currentId ? 'Edición' : 'Creación');
+      currentId = savedList.id;
+      saved = snap();
+      markDirty();
+      toast(`Lista guardada (versión ${L.currentVersion(savedList).v})`, 'ok');
+      if (leave) {
+        setLeaveGuard(null);
         location.hash = '#/listas';
-      } catch (e) {
-        errEl.textContent = e.message; // E-1: vuelve al paso 3
-      }
-    },
-  }, icon('check'), 'Guardar lista');
+      } else if (!listId) history.replaceState(null, '', `#/listas/${currentId}`);
+      return true;
+    } catch (e) {
+      errEl.textContent = e.message; // E-1: vuelve al paso 3
+      errEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return false;
+    }
+  };
+  const discard = () => {
+    const base = currentId ? L.currentItems(L.getList(currentId)) : [];
+    draft.splice(0, draft.length, ...base.map((i) => ({ ...i })));
+    nameInput.value = currentId ? L.currentVersion(L.getList(currentId)).name : '';
+    errEl.textContent = '';
+    renderItems();
+    refreshEstimate();
+    saved = snap();
+    markDirty();
+  };
+  const saveBtn = h('button', { class: 'btn btn-primary btn-lg', onclick: () => doSave(true) }, icon('check'), 'Guardar lista');
+  nameInput.addEventListener('input', markDirty);
+  setLeaveGuard({ dirty: isDirty, name: 'la lista', save: () => doSave(false) });
 
   renderItems();
   refreshEstimate();
+  markDirty();
 
   return h(
     'div',
     { class: 'page' },
     pageHeader(list ? 'Editar lista' : 'Nueva lista', { back: '#/listas', help: HELP.lists }),
+    unsavedBar,
     card(
       h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Nombre'), nameInput),
       h('div', { class: 'row space' }, h('h2', { class: 'h3' }, 'Productos'), h('button', { class: 'btn btn-secondary', 'data-tip': 'Buscá por nombre, marca, categoría o código de barras', onclick: async () => {
@@ -162,19 +204,20 @@ function editor(listId, rerender) {
         else draft.push({ generic: r.generic, productId: r.productId, qty: 1 });
         renderItems();
         refreshEstimate();
+        markDirty();
       } }, icon('plus'), 'Agregar')),
       itemsEl,
       estEl,
       errEl,
-      h('div', { class: 'row end' }, saveBtn)
+      h('div', { class: 'row end' }, stateEl, saveBtn)
     ),
-    list ? versionsCard(list, rerender) : null,
-    steps('CU-01 · pasos 1–6 · A-1 · A-2 (EP_EdicionItem → CU-05) · E-1')
+    list ? versionsCard(list, rerender, isDirty) : null,
+    steps('CU-01 · pasos 1–6 · A-1 · A-2 (EP_EdicionItem → CU-05) · A-3 · A-4 · E-1')
   );
 }
 
-function versionsCard(list, rerender) {
-  const det = h('details', { class: 'card' }, h('summary', {}, `Historial de versiones (${list.versions.length})`));
+function versionsCard(list, rerender, isDirty) {
+  const det = h('details', { class: 'card' }, h('summary', {}, `Historial de versiones (${list.versions.length})`), h('p', { class: 'muted small' }, 'Cada vez que guardás (cambio de nombre, de productos o de cantidades), cambiás una marca o restaurás, se crea una versión nueva. Restaurar no borra las versiones posteriores.'));
   const ul = h('ul', { class: 'versions' });
   [...list.versions].reverse().forEach((v) =>
     ul.append(
@@ -183,7 +226,9 @@ function versionsCard(list, rerender) {
         {},
         h('div', {}, h('strong', {}, `v${v.v}`), ` · ${fmtDate(v.ts)} · ${v.items.length} ítem(s)`, h('br'), h('small', { class: 'muted' }, v.note || '')),
         v !== L.currentVersion(list)
-          ? h('button', { class: 'btn btn-ghost btn-sm', onclick: async () => {
+          ? h('button', { class: 'btn btn-ghost btn-sm', 'data-tip': 'Crea una nueva versión con el contenido de esta (A-3)', onclick: async () => {
+              if (isDirty() && !(await confirmDialog('Restaurar versión', 'Tenés cambios sin guardar que se van a perder. ¿Restaurar igual?', { ok: 'Restaurar' }))) return;
+              setLeaveGuard(null);
               await L.saveVersion(list.id, v.name, v.items, `Restaurada desde v${v.v}`);
               toast('Versión restaurada como nueva versión', 'ok');
               rerender();

@@ -59,7 +59,7 @@ export async function register({ username, displayName, password }) {
     id: crypto.randomUUID(),
     username: uname,
     displayName: String(displayName || uname).trim().slice(0, 40),
-    role: existing.length === 0 ? 'admin' : 'user', // la primera cuenta administra la sincronización (CU-10)
+    role: existing.length === 0 ? 'admin' : 'user', // la primera cuenta administra la sincronización (CU-09)
     createdAt: Date.now(),
     pw: await C.wrapWithPassword(dek, password),
     rec: await C.wrapWithRecovery(dek, recoveryCode),

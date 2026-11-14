@@ -1,4 +1,4 @@
-// Bandeja de avisos (notificaciones de alertas, CU-02 paso 9).
+// Bandeja «Avisos recibidos» (CU-12 pasos 5 y 7; A-3 cuando las notificaciones no están habilitadas).
 import { HELP } from '../ui/help.js';
 import { h, icon } from '../ui/dom.js';
 import { pageHeader, empty } from '../ui/components.js';
