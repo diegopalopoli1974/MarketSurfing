@@ -41,7 +41,7 @@ export async function render() {
         'ol',
         { class: 'how' },
         h('li', {}, 'Elegís una lista, tu ubicación y qué días podés comprar.'),
-        h('li', {}, 'La app aplica ofertas por cantidad, descuentos del día y los de tus medios de pago.'),
+        h('li', {}, 'La app aplica las promociones de los comercios (por cantidad, por día, para socios) y las de tus medios de pago, con sus topes.'),
         h('li', {}, 'Ves el mapa de verde (más barato) a rojo (más caro) y elegís comercio o día.')
       )
     )

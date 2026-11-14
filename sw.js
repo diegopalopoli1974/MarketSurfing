@@ -1,6 +1,6 @@
 // Service worker de MarketSurfing: la app funciona completa sin conexión.
 // Archivo generado por tools/build-sw.mjs — no editar a mano.
-const VERSION = '996767c8351e';
+const VERSION = 'de8059592dd6';
 const CACHE = `ms-shell-${VERSION}`;
 const RUNTIME = 'ms-runtime-v1';
 const TILES = 'ms-tiles-v1';

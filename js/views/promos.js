@@ -71,7 +71,7 @@ export async function render({ query }) {
           )
         )
       );
-    out.append(steps('CU-12 · pasos 1–5 · E-1'));
+    out.append(steps('CU-12 · pasos 1–5 · A-1 · A-2 · E-1'));
   }
 
   /** Calendario cadena × día de las promociones de medios de pago (como una grilla de tarifas). */

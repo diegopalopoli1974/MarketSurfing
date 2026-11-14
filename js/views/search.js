@@ -42,7 +42,7 @@ export async function render({ query }) {
   const radius = h('input', { type: 'range', min: 1, max: 15, step: 1, value: st.radiusKm, class: 'range', 'aria-label': 'Radio en kilómetros', oninput: (e) => ((st.radiusKm = Number(e.target.value)), (radiusOut.textContent = `${st.radiusKm} km`)) });
   const hasMyDays = profile.availability.buy.length > 0;
   const daysSeg = segmented('days', [
-    { value: 'today', label: 'Hoy', tip: 'Calcula sólo con las ofertas y descuentos de hoy' },
+    { value: 'today', label: 'Hoy', tip: 'Calcula sólo con las promociones de hoy' },
     { value: 'mine', label: 'Mis días', tip: 'Usa los días para comprar que cargaste en tu perfil' },
     { value: 'week', label: 'Toda la semana', tip: 'Compara los 7 días y te dice cuál conviene («la mejor ola»)' },
   ], st.daysMode, (v) => {
@@ -68,7 +68,7 @@ export async function render({ query }) {
       'details',
       { class: 'explain' },
       h('summary', {}, icon('info', { size: 16 }), ' ¿Cómo se pondera el traslado? (ejemplo)'),
-      h('p', {}, 'Para cada combinación posible se calcula: ', h('strong', {}, 'total de los productos (con ofertas y descuentos) + km del recorrido × costo por km'), '. El recorrido sale de tu ubicación, pasa por los comercios en el orden más corto y vuelve. Se elige la combinación más baja que respete el máximo de comercios y de km.'),
+      h('p', {}, 'Para cada combinación posible se calcula: ', h('strong', {}, 'total de los productos (con promociones y descuento del medio de pago) + km del recorrido × costo por km'), '. El recorrido sale de tu ubicación, pasa por los comercios en el orden más corto y vuelve. Se elige la combinación más baja que respete el máximo de comercios y de km.'),
       h('p', {}, h('strong', {}, 'Ejemplo: '), 'comprando todo en el comercio A (a 1 km) pagás $ 50.000 y recorrés 2 km (ida y vuelta). Si el aceite y el café están $ 1.800 más baratos en B, y pasar por B alarga el recorrido de 2 a 5 km (3 km más):'),
       h('ul', { class: 'bullets' }, h('li', {}, 'con $ 250 por km: 3 km × $ 250 = $ 750 de traslado < $ 1.800 de ahorro → conviene ir también a B (ahorro neto $ 1.050).'), h('li', {}, 'con $ 700 por km: 3 km × $ 700 = $ 2.100 > $ 1.800 → conviene comprar todo en A.'), h('li', {}, 'con $ 0 por km: el traslado no pesa y cada producto va al comercio más barato, siempre dentro del máximo de comercios y de km.'))
     )
@@ -137,7 +137,7 @@ export async function render({ query }) {
 
   const shortName = (s) => (s.name.length > 26 ? s.name.slice(0, 25) + '…' : s.name);
   const promoCount = (b) => b.lines.filter((l) => l.promo).length;
-  const benefitsText = (b) => [promoCount(b) ? `${promoCount(b)} oferta(s)` : null, b.payment.discount ? `${b.payment.issuer}: −${money(b.payment.discount)}` : null].filter(Boolean).join(' · ');
+  const benefitsText = (b) => [promoCount(b) ? `${promoCount(b)} promoción(es)` : null, b.payment.discount ? `${b.payment.issuer}: −${money(b.payment.discount)}` : null].filter(Boolean).join(' · ');
 
   function showResults(res, items, list, reps) {
     clear(results);
@@ -212,14 +212,14 @@ export async function render({ query }) {
             {},
             h(
               'button',
-              { class: 'res-row', onclick: () => openDetail(s.id), 'data-tip': 'Ver el detalle de precios, ofertas y descuentos de este comercio' },
+              { class: 'res-row', onclick: () => openDetail(s.id), 'data-tip': 'Ver el detalle de precios, promociones y medio de pago de este comercio' },
               h('span', { class: 'res-rank', style: { background: col.color } }, String(rank.get(s.id))),
               h(
                 'span',
                 { class: 'res-main' },
                 h('strong', {}, s.name),
                 h('small', {}, `${s.address}${s.barrio ? `, ${s.barrio}` : ''} · ${fmtDistance(s.dist)}${isBest ? ` · mejor día: ${DAYS[b.day]}` : ''}`),
-                h('small', { class: 'res-benefits' }, benefitsText(b) || 'Sin ofertas ni descuentos aplicables', ` · reputación ${rep.score}/100`)
+                h('small', { class: 'res-benefits' }, benefitsText(b) || 'Sin promociones ni descuentos aplicables', ` · reputación ${rep.score}/100`)
               ),
               h('span', { class: 'res-total' }, h('strong', {}, money(b.total)), h('small', { class: saving > 0 ? 'good' : 'muted' }, saving > 0 ? `${col.t < 0.01 ? '▼ ' : ''}−${money(saving)} · ${E.pctFmt((saving / max) * 100, 0)}` : col.t > 0.99 && complete.length > 1 ? '▲ el más caro' : '—'))
             )
@@ -326,7 +326,7 @@ export async function render({ query }) {
                 const col = E.priceColor(b.total, min, max);
                 const isRowBest = best && best.day === d;
                 const isTop = res.bestOverall && res.bestOverall.storeId === s.id && res.bestOverall.day === d;
-                return h('td', { class: ['num', isRowBest && 'row-best', bestCol.get(d) === s.id && 'col-best'] }, h('button', { class: 'cell-btn', style: { borderColor: col.color }, onclick: () => onCell(s.id, d), title: `${s.name} · ${DAYS[d]}: ${money(b.total)}${benefitsText(b) ? ` (${benefitsText(b)})` : ''}` }, h('span', { class: 'cell-dot', style: { background: col.color } }), isTop ? '★ ' : '', money(b.total), b.payment.discount || promoCount(b) ? h('small', { class: 'block muted' }, [promoCount(b) ? `${promoCount(b)} of.` : null, b.payment.discount ? b.payment.issuer : null].filter(Boolean).join(' · ')) : null));
+                return h('td', { class: ['num', isRowBest && 'row-best', bestCol.get(d) === s.id && 'col-best'] }, h('button', { class: 'cell-btn', style: { borderColor: col.color }, onclick: () => onCell(s.id, d), title: `${s.name} · ${DAYS[d]}: ${money(b.total)}${benefitsText(b) ? ` (${benefitsText(b)})` : ''}` }, h('span', { class: 'cell-dot', style: { background: col.color } }), isTop ? '★ ' : '', money(b.total), b.payment.discount || promoCount(b) ? h('small', { class: 'block muted' }, [promoCount(b) ? `${promoCount(b)} prom.` : null, b.payment.discount ? b.payment.issuer : null].filter(Boolean).join(' · ')) : null));
               })
             )
           )
@@ -397,13 +397,13 @@ export async function render({ query }) {
               'ol',
               { class: 'res-list' },
               parts.map((p, i) =>
-                h('li', {}, h('button', { class: 'res-row', onclick: () => basketModal({ title: `${Cat.store(p.storeId).name} · ${DAYS[p.day]}`, subtitle: `${p.lines.length} producto(s)`, parts: [{ store: res.ctx.stores.find((s) => s.id === p.storeId), basket: p }], reference: { storeId: p.storeId, day: p.day }, res, items, list, reps }) }, h('span', { class: 'res-rank', style: { background: 'var(--accent)' } }, String(i + 1)), h('span', { class: 'res-main' }, h('strong', {}, Cat.store(p.storeId).name), h('small', {}, `${p.lines.length} producto(s): ${p.lines.slice(0, 4).map((l) => Cat.product(l.productId).genericName).join(', ')}${p.lines.length > 4 ? '…' : ''}`), h('small', { class: 'res-benefits' }, benefitsText(p) || 'Sin ofertas ni descuentos aplicables')), h('span', { class: 'res-total' }, h('strong', {}, money(p.total)))))
+                h('li', {}, h('button', { class: 'res-row', onclick: () => basketModal({ title: `${Cat.store(p.storeId).name} · ${DAYS[p.day]}`, subtitle: `${p.lines.length} producto(s)`, parts: [{ store: res.ctx.stores.find((s) => s.id === p.storeId), basket: p }], reference: { storeId: p.storeId, day: p.day }, res, items, list, reps }) }, h('span', { class: 'res-rank', style: { background: 'var(--accent)' } }, String(i + 1)), h('span', { class: 'res-main' }, h('strong', {}, Cat.store(p.storeId).name), h('small', {}, `${p.lines.length} producto(s): ${p.lines.slice(0, 4).map((l) => Cat.product(l.productId).genericName).join(', ')}${p.lines.length > 4 ? '…' : ''}`), h('small', { class: 'res-benefits' }, benefitsText(p) || 'Sin promociones ni descuentos aplicables')), h('span', { class: 'res-total' }, h('strong', {}, money(p.total)))))
               )
             )
           )
         );
       }
-      if (plan.missing.length) body.append(h('p', { class: 'notice' }, icon('alert'), `Sin oferta en los comercios elegibles: ${plan.missing.map((m) => L.itemLabel(m)).join(', ')}`));
+      if (plan.missing.length) body.append(h('p', { class: 'notice' }, icon('alert'), `Sin precio en los comercios elegibles: ${plan.missing.map((m) => L.itemLabel(m)).join(', ')}`));
       body.append(h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: () => basketModal({ title: 'Compra repartida', subtitle: `${plan.parts.length} visita(s) · recorrido ${km(plan.km)}`, parts: plan.parts.map((p) => ({ store: res.ctx.stores.find((s) => s.id === p.storeId), basket: p })), reference: { storeId: plan.parts[0].storeId, day: plan.parts[0].day }, res, items, list, travel: plan.travel, reps }) }, 'Ver detalle completo')));
     };
     draw();
@@ -437,12 +437,12 @@ export async function render({ query }) {
             h(
               'tfoot',
               {},
-              h('tr', {}, h('td', { colspan: 3 }, 'Subtotal con ofertas'), h('td', { class: 'num' }, money(basket.subtotal))),
+              h('tr', {}, h('td', { colspan: 3 }, 'Subtotal con promociones del comercio'), h('td', { class: 'num' }, money(basket.subtotal))),
               basket.payment.discount ? h('tr', { class: 'good' }, h('td', { colspan: 3 }, `Medio de pago: ${basket.payment.label}${basket.payment.remaining != null ? ` · tope disponible antes de esta compra ${money(basket.payment.remaining)}` : ''}`), h('td', { class: 'num' }, `−${money(basket.payment.discount)}`)) : h('tr', {}, h('td', { colspan: 4, class: 'muted small' }, st.usePayments ? 'No se aplicó ningún descuento de medio de pago (ver el motivo de cada promoción abajo).' : 'No se aplicaron descuentos de medios de pago (opción desactivada).')),
               h('tr', { class: 'total' }, h('td', { colspan: 3 }, 'Total'), h('td', { class: 'num' }, money(basket.total)))
             )
           ),
-          h('p', { class: 'muted small' }, `Ahorro por ofertas: ${money(basket.gross - basket.subtotal)} · por medio de pago: ${money(basket.payment.discount)} · reputación del comercio ${reps.get(store.id).score}/100 (informativa, no altera el ranking)`),
+          h('p', { class: 'muted small' }, `Ahorro por promociones del comercio: ${money(basket.gross - basket.subtotal)} · por medio de pago: ${money(basket.payment.discount)} · reputación del comercio ${reps.get(store.id).score}/100 (informativa, no altera el ranking)`),
           payRows.length ? h('details', { open: !basket.payment.discount }, h('summary', { class: 'small' }, `Promociones de medios de pago de este comercio (${payRows.length})`), h('ul', { class: 'bullets small' }, payRows.map((r) => h('li', {}, `${PR.label(r.promo, Cat)} — `, r.reason ? h('em', {}, r.reason) : h('strong', {}, `aplicada: −${money(r.discount)}`))))) : h('p', { class: 'muted small' }, 'Este comercio no tiene promociones de medios de pago cargadas.')
         )
       );

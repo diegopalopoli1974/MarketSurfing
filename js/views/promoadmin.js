@@ -67,7 +67,7 @@ export function promoForm({ preset = {}, onSaved = () => {} } = {}) {
   const mech = sel(Object.entries(PR.MECHANICS), p0.type === 'payment' ? 'pct' : p0.type, { onchange: () => (drawMech(), preview()) });
   const n = num(p0.n ?? 2, { min: 2, max: 10, 'aria-label': 'Llevás' });
   const m = num(p0.m ?? 1, { min: 1, max: 9, 'aria-label': 'Pagás' });
-  const pct = num(p0.pct ?? 20, { min: 1, max: 90, 'aria-label': 'Porcentaje' });
+  const pct = num(p0.pct ?? 20, { min: 1, max: 100, 'aria-label': 'Porcentaje' });
   const price = num(p0.price ?? '', { min: 1, step: '0.01', 'aria-label': 'Precio por unidad' });
   const minQty = num(p0.type !== 'payment' && preset.id ? p0.minQty : '', { min: 1, max: 50, placeholder: 'automática' });
   const maxUnits = num(p0.maxUnits ?? '', { min: 1, max: 99, placeholder: 'sin tope' });
