@@ -38,7 +38,7 @@ export async function init(onProgress = () => {}) {
 }
 
 const CATALOG_DB_VERSION = 2;
-export const CATALOG_VERSION = 2;
+export const CATALOG_VERSION = 3; // 3: promociones con condiciones (socios, cantidad mínima, topes por período)
 
 async function deleteWhere(store, pred) {
   await new Promise((res, rej) => {
@@ -333,6 +333,11 @@ export async function resetAll() {
 }
 
 // ---------- Carga manual (CU-10: Colaborador nivel 2 / Administrador) ----------
+export async function removePromo(id) {
+  await db.delete('promos', id);
+  mem.promos = mem.promos.filter((p) => p.id !== id);
+}
+
 export async function addPromo(promo) {
   await db.put('promos', promo);
   mem.promos = [...mem.promos.filter((p) => p.id !== promo.id), promo];

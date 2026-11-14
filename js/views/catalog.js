@@ -9,6 +9,7 @@ import * as Geo from '../core/geo.js';
 import { session, collabLevel, isAdmin } from '../app/session.js';
 import { money, DAYS_SHORT, DAYS } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
+import { promoForm } from './promoadmin.js';
 
 const UNITS = [
   ['g', 'gramos (g)'],
@@ -59,18 +60,18 @@ export async function render({ query }) {
   const draw = () => {
     clear(tabs);
     for (const [id, label, ic, tip] of [
-      ['precio', 'Cargar precio', 'ticket', 'Registrar el precio (y la promoción) de un producto en un comercio; si el comercio o el producto no existen, los das de alta en el mismo paso'],
+      ['precio', 'Cargar precio', 'ticket', 'Registrar el precio de un producto en un comercio; si el comercio o el producto no existen, los das de alta en el mismo paso. Después podés agregarle una promoción'],
       ['mias', isAdmin() ? 'Cargas manuales' : 'Mis cargas', 'list', 'Ver y eliminar lo que se cargó a mano'],
     ])
       tabs.append(h('button', { role: 'tab', class: ['tab', tab === id && 'active'], 'aria-selected': tab === id ? 'true' : 'false', 'data-tip': tip, onclick: () => ((tab = id), draw()) }, icon(ic, { size: 18 }), label));
     Promise.resolve(tab === 'precio' ? priceForm() : myLoads(draw)).then((el) => clear(body).append(el));
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-10 · pasos 1–6 · A-1 · A-2 · A-3 · E-1 · E-2'));
+  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-10 · pasos 1–6 · A-1 · A-2 · A-3 · A-4 (EP_PrecioRegistrado → CU-13) · E-1 · E-2'));
 }
 
 // ---------- Selector de sucursal ----------
-function storePicker(onPick, selected, onNew) {
+export function storePicker(onPick, selected, onNew) {
   const q = h('input', { class: 'input', type: 'search', placeholder: 'Buscar por cadena, barrio, localidad o dirección', 'data-tip': 'Escribí parte del nombre de la cadena, el barrio o la dirección' });
   const list = h('ul', { class: 'pick-list compact' });
   const chosen = h('p', { class: 'loc-chosen' }, selected ? `Elegido: ${selected.name}` : 'Ningún comercio elegido');
@@ -109,7 +110,7 @@ function storePicker(onPick, selected, onNew) {
 
 // ---------- Precio ----------
 function priceForm() {
-  const st = { store: null, product: null, days: [] };
+  const st = { store: null, product: null };
   const prodBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-block', 'data-tip': 'Buscá el producto por nombre, marca o código de barras', onclick: async () => {
     const r = await pickProduct({ allowGeneric: false, title: 'Producto' });
     if (!r) return;
@@ -125,16 +126,7 @@ function priceForm() {
   };
   const price = h('input', { type: 'number', class: 'input', min: 1, step: '0.01', inputmode: 'decimal' });
   const date = h('input', { type: 'date', class: 'input', value: dayKey(), max: dayKey() });
-  const promo = h('select', { class: 'input' }, [
-    h('option', { value: '' }, 'Sin promoción'),
-    ...['2x1', '3x2', '4x3', '2da al 50 %', '2da al 70 %', '2da al 80 %', '10 %', '15 %', '20 %', '25 %', '30 %', '35 %', '40 %'].map((x) => h('option', { value: x }, x)),
-  ]);
-  const daysBox = h('div', { class: 'chips' });
-  const drawDays = () => {
-    clear(daysBox);
-    [1, 2, 3, 4, 5, 6, 0].forEach((d) => daysBox.append(chip(DAYS_SHORT[d], { title: DAYS[d], active: st.days.includes(d), onClick: () => ((st.days = st.days.includes(d) ? st.days.filter((x) => x !== d) : [...st.days, d]), drawDays()) })));
-  };
-  drawDays();
+  const after = h('div', { 'aria-live': 'polite' });
   const err = h('p', { class: 'form-error', role: 'alert' });
   const save = h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: async () => {
     err.textContent = '';
@@ -149,15 +141,16 @@ function priceForm() {
     }
     setBusy(save, true, 'Guardando…');
     await Cat.recordPrice({ storeId: st.store.id, productId: st.product.id, price: Math.round(v), source: 'manual', date: date.value || dayKey() });
-    if (promo.value) {
-      const p = parsePromo(promo.value);
-      await Cat.addPromo({ id: `man-${st.store.id}-${st.product.id}`, storeId: st.store.id, chainId: null, productId: st.product.id, days: st.days.length ? [...st.days].sort() : null, manual: true, label: `${p.label} en ${st.product.name}${st.days.length ? ` (${st.days.sort().map((d) => DAYS_SHORT[d]).join(', ')})` : ''}`, ...p });
-    }
-    await log({ what: 'precio', storeId: st.store.id, productId: st.product.id, label: `${st.product.name} · ${money(v)} en ${st.store.name}${promo.value ? ` · ${promo.value}` : ''}` });
+    await log({ what: 'precio', storeId: st.store.id, productId: st.product.id, label: `${st.product.name} · ${money(v)} en ${st.store.name}` }); // paso 5
     setBusy(save, false);
-    toast('Precio registrado como nueva versión. Quedó en «Mis cargas».', 'ok');
+    toast('Precio registrado como nueva versión. Quedó en «Mis cargas».', 'ok'); // paso 6
+    // A-4: punto de extensión EP_PrecioRegistrado → CU-13 con comercio y producto precargados
+    const { store, product } = st;
+    clear(after).append(h('div', { class: 'notice' }, icon('info'), h('span', {}, `Precio de ${product.name} registrado. ¿Tiene una promoción en este comercio? `), h('button', { class: 'btn btn-secondary btn-sm', 'data-tip': 'Abre la carga de promociones (CU-13) con el comercio y el producto ya elegidos', onclick: () => {
+      let mdl;
+      mdl = modal({ title: 'Promoción para este precio', wide: true, content: h('div', {}, promoForm({ preset: { type: 'pct', storeId: store.id, productId: product.id, fixedClass: true }, onSaved: () => (mdl.close(), clear(after)) }), steps('CU-10 · A-4 (EP_PrecioRegistrado → CU-13)')) });
+    } }, icon('plus', { size: 16 }), 'Agregar promoción')));
     price.value = '';
-    promo.value = '';
     refreshCurrent();
   } }, icon('check'), 'Guardar precio');
   return card(
@@ -166,19 +159,10 @@ function priceForm() {
     field('Producto', h('div', { class: 'stack' }, prodBtn, h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-secondary btn-sm', 'data-tip': 'El producto o la marca no están en el catálogo: darlos de alta y seguir con el precio (A-2)', onclick: () => newEntityModal('Nuevo producto', (done) => productForm(done), (p) => ((st.product = p), clear(prodBtn).append(icon('edit', { size: 18 }), p.name), refreshCurrent())) }, icon('plus', { size: 16 }), 'Nuevo producto'))), null, 'Buscá el producto; si no existe, dalo de alta con «Nuevo producto».'),
     current,
     h('div', { class: 'grid2' }, field('Precio de lista ($)', price, null, 'El precio de góndola por unidad, sin descuentos.'), field('Fecha del precio', date, null, 'Cuándo viste o confirmaste el precio. No puede ser futura.')),
-    field('Promoción (opcional)', promo, null, 'Oferta del comercio para este producto. Se aplica en las búsquedas a partir de ahora.'),
-    h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Días de la promoción (vacío = todos)'), daysBox),
     err,
-    h('div', { class: 'row end' }, save)
+    h('div', { class: 'row end' }, save),
+    after
   );
-}
-
-function parsePromo(v) {
-  let m;
-  if ((m = v.match(/^(\d)x(\d)$/))) return { type: 'nxm', n: +m[1], m: +m[2], label: v };
-  if ((m = v.match(/^2da al (\d+)/))) return { type: 'second', pct: +m[1], label: `2da unidad al ${m[1]} %` };
-  m = v.match(/^(\d+)/);
-  return { type: 'pct', pct: +m[1], label: `${m[1]} % de descuento` };
 }
 
 // ---------- Comercio ----------

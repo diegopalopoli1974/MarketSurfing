@@ -10,7 +10,7 @@ import * as OCR from '../core/ocr.js';
 import { interpret } from '../core/nlp.js';
 import { money } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
-import { addPoints, POINT_RULES, collabLevel } from '../app/session.js';
+import { session, addPoints, POINT_RULES, collabLevel } from '../app/session.js';
 
 export async function render() {
   if (collabLevel() < 1)
@@ -160,7 +160,8 @@ export async function render() {
     const wd = new Date(`${data.date}T12:00`).getDay();
     for (const l of data.items.filter((x) => x.promo)) {
       const p = parsePromo(l.promo);
-      await Cat.addPromo({ id: `tk-${data.storeId}-${l.product.id}`, storeId: data.storeId, chainId: null, productId: l.product.id, days: [wd], until: dayKey(new Date(Date.now() + 7 * 86400000)), source: 'ticket', label: `${p.label} en ${l.product.name} (según ticket)`, ...p });
+      const { label: _l, ...mech } = p;
+      await Cat.addPromo({ id: `tk-${data.storeId}-${l.product.id}`, storeId: data.storeId, chainId: null, productId: l.product.id, days: [wd], from: data.date, until: dayKey(new Date(Date.now() + 7 * 86400000)), membership: null, condition: null, maxUnits: null, source: 'ticket', author: session.account.displayName, authorId: session.reporterId, createdAt: Date.now(), ...mech });
     }
     const act = UD.get('activity');
     const todays = act.tickets.filter((x) => new Date(x.ts).toDateString() === new Date().toDateString()).length;

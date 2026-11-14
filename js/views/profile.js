@@ -1,4 +1,5 @@
 // CU-05 Gestionar Perfil de Compra (RF-10, RF-11, RF-16, RF-19). Todo opcional y privado (RNF-10).
+// (a) incluye medios de pago con tipo y red, y programas de socios (condición de algunas promociones, sección 4.6).
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, toast, modal, segmented, field, steps, chip, confirmDialog } from '../ui/components.js';
@@ -8,10 +9,11 @@ import { session, isAdmin, collabLevel, COLLAB_NAMES } from '../app/session.js';
 import * as Cat from '../data/catalog.js';
 import * as L from '../app/listsvc.js';
 import { PAYMENT_ISSUERS } from '../data/demo-seed.js';
+import * as PR from '../core/promos.js';
 import { DAYS, DAYS_SHORT, TIERS, tierName } from '../core/engine.js';
 
 const REASONS = ['Precios altos', 'Mala atención', 'Faltantes frecuentes', 'Reputación baja', 'Difícil acceso', 'Promociones poco claras', 'Preferencia personal', 'Otro'];
-const TYPE_LABEL = { billetera: 'Billetera virtual', banco: 'Banco', tarjeta: 'Tarjeta', programa: 'Programa de beneficios', efectivo: 'Efectivo' };
+const TYPE_LABEL = { billetera: 'Billetera virtual', banco: 'Banco', tarjeta: 'Tarjeta', efectivo: 'Efectivo' };
 
 export async function render({ query }) {
   let tab = query.get('s') || 'pagos';
@@ -20,7 +22,7 @@ export async function render({ query }) {
   const draw = () => {
     clear(tabs);
     for (const [id, label, ic] of [
-      ['pagos', 'Medios de pago', 'card'],
+      ['pagos', 'Medios de pago y socios', 'card'],
       ['dias', 'Disponibilidad', 'calendar'],
       ['excluidos', 'Comercios', 'ban'],
       ['gamas', 'Gamas', 'star'],
@@ -34,40 +36,82 @@ export async function render({ query }) {
 
 const confirmSaved = () => toast('Perfil actualizado', 'ok'); // paso 4
 
-// (a) Medios de pago: sólo tipo y emisor, nunca números
+// (a) Medios de pago (emisor, tipo y red; nunca números) y programas de socios
+const mediumText = (p) => `${p.issuer}${p.kind ? ` · ${PR.KINDS[p.kind]}` : ''}${p.network ? ` ${p.network}` : ''}`;
 function payments() {
   const pr = UD.get('profile');
+  pr.memberships = pr.memberships || [];
   const listEl = h('ul', { class: 'chips wrap' });
+  const memEl = h('ul', { class: 'chips wrap' });
   const draw = () => {
     clear(listEl);
     if (!pr.payments.length) listEl.append(h('li', { class: 'muted' }, 'No cargaste medios de pago.'));
     for (const p of pr.payments)
-      listEl.append(h('li', {}, h('span', { class: 'chip chip-on' }, `${p.issuer} · ${TYPE_LABEL[p.type] || p.type}`, h('button', { class: 'chip-x', 'aria-label': `Quitar ${p.issuer}`, onclick: async () => {
+      listEl.append(h('li', {}, h('span', { class: 'chip chip-on' }, mediumText(p), h('button', { class: 'chip-x', 'aria-label': `Quitar ${mediumText(p)}`, onclick: async () => {
         pr.payments = pr.payments.filter((x) => x !== p);
+        await UD.save('profile');
+        confirmSaved();
+        draw();
+      } }, '×'))));
+    clear(memEl);
+    if (!pr.memberships.length) memEl.append(h('li', { class: 'muted' }, 'No cargaste programas de socios.'));
+    for (const m of pr.memberships)
+      memEl.append(h('li', {}, h('span', { class: 'chip chip-on' }, m, h('button', { class: 'chip-x', 'aria-label': `Quitar ${m}`, onclick: async () => {
+        pr.memberships = pr.memberships.filter((x) => x !== m);
         await UD.save('profile');
         confirmSaved();
         draw();
       } }, '×'))));
   };
   draw();
-  const sel = h('select', { class: 'input' }, h('option', { value: '' }, 'Elegí un medio…'), Object.entries(PAYMENT_ISSUERS).map(([name, type]) => h('option', { value: name }, `${name} (${TYPE_LABEL[type]})`)));
+  const sel = h('select', { class: 'input', 'aria-label': 'Emisor', onchange: () => {
+    const t = PAYMENT_ISSUERS[sel.value];
+    kind.value = t === 'billetera' ? 'billetera' : t === 'efectivo' ? 'efectivo' : kind.value === 'billetera' || kind.value === 'efectivo' ? '' : kind.value;
+  } }, h('option', { value: '' }, 'Emisor…'), Object.entries(PAYMENT_ISSUERS).map(([name, type]) => h('option', { value: name }, `${name} (${TYPE_LABEL[type]})`)));
+  const kind = h('select', { class: 'input', 'aria-label': 'Tipo de medio', 'data-tip': 'Algunas promociones son sólo con crédito o sólo con débito' }, h('option', { value: '' }, 'Tipo (sin especificar)'), Object.entries(PR.KINDS).map(([k, v]) => h('option', { value: k }, v)));
+  const net = h('select', { class: 'input', 'aria-label': 'Red de la tarjeta', 'data-tip': 'Algunas promociones exigen una red (por ejemplo, sólo Visa)' }, h('option', { value: '' }, 'Red (sin especificar)'), PR.NETWORKS.map((n) => h('option', { value: n }, n)));
   const err = h('p', { class: 'form-error', role: 'alert' });
+  const known = [...new Set(Cat.promos().map((p) => p.membership).filter(Boolean))].sort();
+  const memIn = h('input', { class: 'input', list: 'ms-memberships', maxlength: 60, placeholder: 'Programa de socios (ej.: Club Coto)', 'aria-label': 'Programa de socios' });
+  const memErr = h('p', { class: 'form-error', role: 'alert' });
   return card(
-    h('p', { class: 'muted small' }, 'Se guarda sólo el tipo y el emisor (por ejemplo «Mercado Pago · Billetera virtual»). Nunca números de tarjeta, de cuenta ni claves.'),
+    h('h3', { class: 'h4' }, 'Medios de pago'),
+    h('p', { class: 'muted small' }, 'Se guarda sólo el emisor, el tipo y la red (por ejemplo «Banco Galicia · Tarjeta de crédito Visa»). Nunca números de tarjeta, de cuenta ni claves. Si no indicás tipo o red, el medio se considera compatible con cualquier promoción de ese emisor. El efectivo no hace falta cargarlo: siempre se considera disponible.'),
     listEl,
-    h('div', { class: 'row' }, sel, h('button', { class: 'btn btn-secondary', onclick: async () => {
+    h('div', { class: 'grid3' }, sel, kind, net),
+    h('div', { class: 'row end' }, h('button', { class: 'btn btn-secondary', onclick: async () => {
       err.textContent = '';
       const issuer = sel.value;
-      // Paso 2: medio existente y sin datos sensibles
-      if (!issuer || !PAYMENT_ISSUERS[issuer]) return (err.textContent = 'Elegí un medio de la lista');
-      if (pr.payments.some((p) => p.issuer === issuer)) return (err.textContent = 'Ese medio ya está cargado');
-      pr.payments.push({ type: PAYMENT_ISSUERS[issuer], issuer });
+      // Paso 2: medio existente, sin repetir y sin datos sensibles
+      if (!issuer || !PAYMENT_ISSUERS[issuer]) return (err.textContent = 'Elegí un emisor de la lista');
+      if ((kind.value === 'billetera' || kind.value === 'efectivo') && net.value) return (err.textContent = 'La red sólo corresponde a tarjetas');
+      const m = { type: PAYMENT_ISSUERS[issuer], issuer, kind: kind.value || null, network: net.value || null };
+      if (pr.payments.some((p) => p.issuer === m.issuer && (p.kind || null) === m.kind && (p.network || null) === m.network)) return (err.textContent = 'Ese medio ya está cargado');
+      pr.payments.push(m);
       await UD.save('profile'); // paso 3
       confirmSaved();
       sel.value = '';
+      kind.value = '';
+      net.value = '';
       draw();
-    } }, icon('plus', { size: 18 }), 'Agregar')),
-    err
+    } }, icon('plus', { size: 18 }), 'Agregar medio')),
+    err,
+    h('h3', { class: 'h4' }, 'Programas de socios'),
+    h('p', { class: 'muted small' }, 'Algunas promociones de los comercios son sólo para socios de su programa de fidelidad. Cargá los programas de los que sos socio para que esas promociones se apliquen en tus búsquedas.'),
+    memEl,
+    h('datalist', { id: 'ms-memberships' }, known.map((k) => h('option', { value: k }))),
+    h('div', { class: 'row' }, memIn, h('button', { class: 'btn btn-secondary', onclick: async () => {
+      memErr.textContent = '';
+      const v = memIn.value.trim();
+      if (v.length < 3) return (memErr.textContent = 'Escribí el nombre del programa');
+      if (pr.memberships.some((m) => m.toLowerCase() === v.toLowerCase())) return (memErr.textContent = 'Ese programa ya está cargado');
+      pr.memberships.push(v);
+      await UD.save('profile');
+      confirmSaved();
+      memIn.value = '';
+      draw();
+    } }, icon('plus', { size: 18 }), 'Agregar programa')),
+    memErr
   );
 }
 

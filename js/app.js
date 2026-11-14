@@ -23,6 +23,8 @@ const routes = {
   ajustes: () => import('./views/settings.js'),
   precios: () => import('./views/prices.js'),
   catalogo: () => import('./views/catalog.js'),
+  promociones: () => import('./views/promos.js'),
+  'gestionar-promociones': () => import('./views/promoadmin.js'),
 };
 
 const NAV = [
@@ -68,11 +70,13 @@ function renderNav() {
 function openMore() {
   const items = [
     { href: '#/precios', icon: 'search', label: 'Precios por producto', sub: 'Qué comercios tienen un producto y a cuánto · CU-02' },
-    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'Medios de pago, días, comercios y gamas · CU-05' },
+    { href: '#/promociones', icon: 'card', label: 'Promociones', sub: 'Bancos, billeteras y ofertas de los comercios, con días, topes y condiciones · CU-12' },
+    { href: '#/perfil', icon: 'user', label: 'Mi perfil de compra', sub: 'Medios de pago y socios, días, comercios y gamas · CU-05' },
     !collabLevel() ? { href: '#/perfil?s=dias', icon: 'mic', label: 'Sumarme como Colaborador', sub: 'Para cargar tickets y reportar en góndola' } : null,
     collabLevel() >= 1 ? { href: '#/gondola', icon: 'mic', label: 'Reportar en góndola', sub: 'CU-06 · Colaborador' } : null,
     collabLevel() >= 1 ? { href: '#/ticket', icon: 'ticket', label: 'Cargar ticket', sub: 'CU-07 · Colaborador' } : null,
     collabLevel() >= 2 ? { href: '#/catalogo', icon: 'store', label: 'Cargar comercios, productos y precios', sub: 'CU-10 · Colaborador nivel 2' } : null,
+    collabLevel() >= 2 ? { href: '#/gestionar-promociones', icon: 'star', label: 'Gestionar promociones', sub: 'CU-13 · alta, modificación y baja · Colaborador nivel 2' } : null,
     isAdmin() ? { href: '#/sync', icon: 'sync', label: 'Sincronizar precios', sub: 'Demo o archivo Precios Claros · CU-08 · Administrador' } : null,
     { href: '#/ajustes', icon: 'shield', label: 'Seguridad y cuenta', sub: isAdmin() ? 'Contraseña, huella, copia y roles de las cuentas' : 'Contraseña, huella y copia de seguridad' },
   ].filter(Boolean);

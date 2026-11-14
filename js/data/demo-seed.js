@@ -336,8 +336,6 @@ const ISSUERS = {
   'Tarjeta Visa': 'tarjeta',
   'Tarjeta Mastercard': 'tarjeta',
   'American Express': 'tarjeta',
-  'Club La Nación': 'programa',
-  'Clarín 365': 'programa',
   Efectivo: 'efectivo',
 };
 export const PAYMENT_ISSUERS = ISSUERS;
@@ -345,32 +343,37 @@ export const PAYMENT_ISSUERS = ISSUERS;
 /** Promociones demo por cadena. Días: 0=domingo … 6=sábado. */
 export function buildPromos(products, weekSeed = 'w0') {
   const P = [];
-  const add = (o) => P.push({ id: `${o.chainId}-${P.length + 1}`, demo: true, ...o });
-  add({ chainId: 'carrefour', type: 'second', pct: 70, category: 'Lácteos', days: null, label: '2da unidad al 70 % en lácteos' });
-  add({ chainId: 'carrefour', type: 'payment', issuer: 'Banco Nación', pct: 25, days: [3], cap: 10000, label: 'Miércoles 25 % Banco Nación (tope $10.000)' });
-  add({ chainId: 'carrefour', type: 'payment', issuer: 'Mercado Pago', pct: 10, days: [2], cap: 4000, label: 'Martes 10 % Mercado Pago (tope $4.000)' });
-  add({ chainId: 'coto', type: 'nxm', n: 3, m: 2, category: 'Bebidas', days: null, label: '3x2 en bebidas' });
-  add({ chainId: 'coto', type: 'payment', issuer: 'Cuenta DNI', pct: 20, days: [4], cap: 6000, label: 'Jueves 20 % Cuenta DNI (tope $6.000)' });
-  add({ chainId: 'coto', type: 'payment', issuer: 'Banco Galicia', pct: 15, days: [1], cap: 5000, label: 'Lunes 15 % Galicia (tope $5.000)' });
-  add({ chainId: 'dia', type: 'payment', issuer: 'Mercado Pago', pct: 15, days: [2], cap: 5000, label: 'Martes 15 % Mercado Pago (tope $5.000)' });
-  add({ chainId: 'dia', type: 'nxm', n: 4, m: 3, category: 'Limpieza', days: null, label: '4x3 en limpieza' });
-  add({ chainId: 'dia', type: 'pct', pct: 10, category: null, days: [6], label: 'Sábados 10 % en toda la tienda' });
-  add({ chainId: 'jumbo', type: 'payment', issuer: 'Banco Galicia', pct: 20, days: [3], cap: 8000, label: 'Miércoles 20 % Galicia (tope $8.000)' });
-  add({ chainId: 'jumbo', type: 'second', pct: 80, category: 'Perfumería', days: null, label: '2da unidad al 80 % en perfumería' });
-  add({ chainId: 'disco', type: 'payment', issuer: 'Banco Santander', pct: 25, days: [1], cap: 7000, label: 'Lunes 25 % Santander (tope $7.000)' });
-  add({ chainId: 'disco', type: 'pct', pct: 15, category: 'Frescos', days: [5], label: 'Viernes 15 % en frescos' });
-  add({ chainId: 'vea', type: 'payment', issuer: 'Cuenta DNI', pct: 20, days: [5], cap: 6000, label: 'Viernes 20 % Cuenta DNI (tope $6.000)' });
-  add({ chainId: 'vea', type: 'nxm', n: 3, m: 2, generic: 'fideos-spaghetti-500', days: null, label: '3x2 en fideos spaghetti' });
-  add({ chainId: 'changomas', type: 'payment', issuer: 'MODO', pct: 25, days: [4], cap: 8000, label: 'Jueves 25 % MODO (tope $8.000)' });
-  add({ chainId: 'changomas', type: 'second', pct: 50, category: 'Bebidas', days: null, label: '2da unidad al 50 % en bebidas' });
-  add({ chainId: 'barrio', type: 'payment', issuer: 'Efectivo', pct: 5, days: [0], cap: null, label: 'Domingos 5 % pagando en efectivo' });
+  const add = (o) => P.push({ id: `${o.chainId}-${P.length + 1}`, demo: true, source: 'demo', from: null, until: null, membership: null, condition: null, ...o });
+  // promociones de comercio
+  add({ chainId: 'carrefour', type: 'second', pct: 70, category: 'Lácteos', days: null });
+  add({ chainId: 'carrefour', type: 'pct', pct: 20, category: 'Almacén', days: [4], membership: 'Club Carrefour', maxUnits: 6 });
+  add({ chainId: 'coto', type: 'nxm', n: 3, m: 2, category: 'Bebidas', days: null });
+  add({ chainId: 'coto', type: 'pct', pct: 15, category: 'Limpieza', days: null, membership: 'Club Coto' });
+  add({ chainId: 'dia', type: 'nxm', n: 4, m: 3, category: 'Limpieza', days: null });
+  add({ chainId: 'dia', type: 'pct', pct: 10, category: null, days: [6], condition: 'presentando la app o el documento en caja' });
+  add({ chainId: 'jumbo', type: 'second', pct: 80, category: 'Perfumería', days: null, maxUnits: 4 });
+  add({ chainId: 'disco', type: 'pct', pct: 15, category: 'Frescos', days: [5] });
+  add({ chainId: 'vea', type: 'nxm', n: 3, m: 2, generic: 'fideos-spaghetti-500', days: null });
+  add({ chainId: 'changomas', type: 'second', pct: 50, category: 'Bebidas', days: null });
+  add({ chainId: 'changomas', type: 'pct', pct: 10, category: 'Almacén', days: null, minQty: 3 });
+  // promociones de medios de pago
+  add({ chainId: 'carrefour', type: 'payment', issuer: 'Banco Nación', kind: 'credito', network: null, pct: 25, days: [3], cap: 10000, capPeriod: 'mes', minPurchase: null, mode: 'reintegro' });
+  add({ chainId: 'carrefour', type: 'payment', issuer: 'Mercado Pago', kind: 'billetera', pct: 10, days: [2], cap: 4000, capPeriod: 'compra', minPurchase: 15000, mode: 'caja' });
+  add({ chainId: 'coto', type: 'payment', issuer: 'Cuenta DNI', kind: 'billetera', pct: 20, days: [4], cap: 6000, capPeriod: 'semana', mode: 'reintegro' });
+  add({ chainId: 'coto', type: 'payment', issuer: 'Banco Galicia', kind: 'credito', network: 'Visa', pct: 15, days: [1], cap: 5000, capPeriod: 'mes', mode: 'reintegro' });
+  add({ chainId: 'dia', type: 'payment', issuer: 'Mercado Pago', kind: 'billetera', pct: 15, days: [2], cap: 5000, capPeriod: 'compra', mode: 'caja' });
+  add({ chainId: 'jumbo', type: 'payment', issuer: 'Banco Galicia', kind: 'credito', pct: 20, days: [3], cap: 8000, capPeriod: 'mes', mode: 'reintegro' });
+  add({ chainId: 'disco', type: 'payment', issuer: 'Banco Santander', kind: 'debito', pct: 25, days: [1], cap: 7000, capPeriod: 'mes', minPurchase: 20000, mode: 'reintegro' });
+  add({ chainId: 'vea', type: 'payment', issuer: 'Cuenta DNI', kind: 'billetera', pct: 20, days: [5], cap: 6000, capPeriod: 'semana', mode: 'reintegro' });
+  add({ chainId: 'changomas', type: 'payment', issuer: 'MODO', kind: 'billetera', pct: 25, days: [4], cap: 8000, capPeriod: 'mes', mode: 'reintegro' });
+  add({ chainId: 'barrio', type: 'payment', issuer: 'Efectivo', kind: 'efectivo', pct: 5, days: [0], cap: null, mode: 'caja' });
   // ofertas puntuales que rotan con cada sincronización
   const r = rng(`promo-rotation-${weekSeed}`);
   for (const c of CHAINS) {
     for (let i = 0; i < 5; i++) {
       const p = products[Math.floor(r() * products.length)];
       const pct = 10 + Math.floor(r() * 5) * 5;
-      add({ chainId: c.id, type: 'pct', pct, productId: p.id, days: null, rotating: true, label: `${pct} % en ${p.name}` });
+      add({ chainId: c.id, type: 'pct', pct, productId: p.id, days: null, rotating: true });
     }
   }
   return P;

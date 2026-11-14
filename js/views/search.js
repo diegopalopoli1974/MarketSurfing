@@ -5,6 +5,7 @@ import { pageHeader, card, empty, toast, modal, segmented, chip, spinner, steps,
 import { locationControl } from '../ui/location.js';
 import { svgMap } from '../ui/map.js';
 import * as E from '../core/engine.js';
+import * as PR from '../core/promos.js';
 import * as L from '../app/listsvc.js';
 import * as Cat from '../data/catalog.js';
 import * as UD from '../core/userdata.js';
@@ -99,7 +100,7 @@ export async function render({ query }) {
     await new Promise((r) => setTimeout(r, 30)); // deja ver el indicador antes del cálculo
     try {
       // Pasos 4-7 (A-2 si reparte la compra)
-      const res = await E.optimize({ items, point: lastPoint, radiusKm: st.radiusKm, days, usePayments: st.usePayments, payments: profile.payments, excluded: profile.excluded, multi: st.multi, splitDays: st.splitDays, maxStores: st.maxStores, maxKm: st.maxKm, costPerKm: st.costPerKm });
+      const res = await E.optimize({ items, point: lastPoint, radiusKm: st.radiusKm, days, usePayments: st.usePayments, payments: profile.payments, memberships: profile.memberships || [], tickets: UD.get('activity').tickets, excluded: profile.excluded, multi: st.multi, splitDays: st.splitDays, maxStores: st.maxStores, maxKm: st.maxKm, costPerKm: st.costPerKm });
       const reps = new Map(await Promise.all(res.ctx.stores.map(async (s) => [s.id, await Cat.reputation(s.id)])));
       showResults(res, items, list, reps);
     } catch (e) {
@@ -412,10 +413,9 @@ export async function render({ query }) {
   function basketModal({ title, subtitle, parts, extra, reference, res, items, list, travel, reps }) {
     const content = h('div', { class: 'basket' }, subtitle ? h('p', { class: 'muted' }, subtitle) : null, extra || null);
     let grand = 0;
-    const myIssuers = new Set(profile.payments.map((p) => p.issuer));
     for (const { store, basket } of parts) {
       grand += basket.total;
-      const otherPay = Cat.promosForStore(store.id).filter((pr) => pr.type === 'payment' && (!pr.days || pr.days.includes(basket.day)) && !myIssuers.has(pr.issuer));
+      const payRows = PR.explainPayment(Cat.promosForStore(store.id), basket.subtotal, basket.day, store.chainId, res.ctx).rows;
       content.append(
         h(
           'section',
@@ -430,19 +430,20 @@ export async function render({ query }) {
               {},
               basket.lines.map((l) => {
                 const p = Cat.product(l.productId);
-                return h('tr', {}, h('td', {}, p.name, l.promo ? h('small', { class: 'promo' }, `Oferta: ${l.promo}`) : null, l.verified ? h('small', { class: 'verified' }, '✓ verificado por ticket') : null), h('td', { class: 'num' }, String(l.qty)), h('td', { class: 'num' }, money(l.unit)), h('td', { class: 'num' }, l.net < l.gross ? h('span', {}, h('s', { class: 'muted' }, money(l.gross)), h('br'), money(l.net)) : money(l.net)));
+                const ex = PR.explainStore(res.ctx.promosByStore.get(store.id) || [], p, l.unit, l.qty, basket.day, res.ctx).rows.filter((r) => r.promo.id !== l.promoId);
+                return h('tr', {}, h('td', {}, p.name, l.promo ? h('small', { class: 'promo' }, `Promoción aplicada: ${l.promo}`) : null, ex.length ? h('details', { class: 'promo-why' }, h('summary', { class: 'small' }, `${ex.length} promoción(es) que no se aplicaron`), h('ul', { class: 'bullets small' }, ex.map((r) => h('li', {}, `${PR.label(r.promo, Cat)} — `, h('em', {}, r.reason))))) : null, l.verified ? h('small', { class: 'verified' }, '✓ verificado por ticket') : null), h('td', { class: 'num' }, String(l.qty)), h('td', { class: 'num' }, money(l.unit)), h('td', { class: 'num' }, l.net < l.gross ? h('span', {}, h('s', { class: 'muted' }, money(l.gross)), h('br'), money(l.net)) : money(l.net)));
               })
             ),
             h(
               'tfoot',
               {},
               h('tr', {}, h('td', { colspan: 3 }, 'Subtotal con ofertas'), h('td', { class: 'num' }, money(basket.subtotal))),
-              basket.payment.discount ? h('tr', { class: 'good' }, h('td', { colspan: 3 }, `Medio de pago: ${basket.payment.issuer} — ${basket.payment.label}`), h('td', { class: 'num' }, `−${money(basket.payment.discount)}`)) : h('tr', {}, h('td', { colspan: 4, class: 'muted small' }, st.usePayments ? 'Ninguno de tus medios de pago tiene descuento en este comercio ese día.' : 'No se aplicaron descuentos de medios de pago (opción desactivada).')),
+              basket.payment.discount ? h('tr', { class: 'good' }, h('td', { colspan: 3 }, `Medio de pago: ${basket.payment.label}${basket.payment.remaining != null ? ` · tope disponible antes de esta compra ${money(basket.payment.remaining)}` : ''}`), h('td', { class: 'num' }, `−${money(basket.payment.discount)}`)) : h('tr', {}, h('td', { colspan: 4, class: 'muted small' }, st.usePayments ? 'No se aplicó ningún descuento de medio de pago (ver el motivo de cada promoción abajo).' : 'No se aplicaron descuentos de medios de pago (opción desactivada).')),
               h('tr', { class: 'total' }, h('td', { colspan: 3 }, 'Total'), h('td', { class: 'num' }, money(basket.total)))
             )
           ),
           h('p', { class: 'muted small' }, `Ahorro por ofertas: ${money(basket.gross - basket.subtotal)} · por medio de pago: ${money(basket.payment.discount)} · reputación del comercio ${reps.get(store.id).score}/100 (informativa, no altera el ranking)`),
-          otherPay.length ? h('details', {}, h('summary', { class: 'small' }, `Otros descuentos de medios de pago ese día (${otherPay.length}) que no tenés en tu perfil`), h('ul', { class: 'bullets small' }, otherPay.map((pr) => h('li', {}, `${pr.issuer}: ${pr.label}`)))) : null
+          payRows.length ? h('details', { open: !basket.payment.discount }, h('summary', { class: 'small' }, `Promociones de medios de pago de este comercio (${payRows.length})`), h('ul', { class: 'bullets small' }, payRows.map((r) => h('li', {}, `${PR.label(r.promo, Cat)} — `, r.reason ? h('em', {}, r.reason) : h('strong', {}, `aplicada: −${money(r.discount)}`))))) : h('p', { class: 'muted small' }, 'Este comercio no tiene promociones de medios de pago cargadas.')
         )
       );
     }

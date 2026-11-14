@@ -8,6 +8,7 @@ const DEFAULTS = {
   lists: () => [],
   profile: () => ({
     payments: [],
+    memberships: [],
     availability: { buy: [], receive: [], verify: [], slots: {} },
     verifier: { enabled: false, consentAt: null },
     excluded: [],

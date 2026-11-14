@@ -9,12 +9,14 @@ import * as Cat from '../data/catalog.js';
 import { distanceKm, fmtDistance } from '../core/geo.js';
 import { money, priceColor, volumeCost, DAYS_SHORT } from '../core/engine.js';
 import { collabLevel } from '../app/session.js';
+import * as PR from '../core/promos.js';
+import * as UD from '../core/userdata.js';
 
 const SOURCE = { ticket: '✓ ticket', gondola: 'góndola', 'gondola-sim': 'góndola (demo)', manual: 'carga manual', demo: 'fuente abierta', sepa: 'Precios Claros' };
 
-/** Promociones de la sucursal que aplican al producto (sin las de medios de pago). */
+/** Promociones del comercio que alcanzan al producto (sin las de medios de pago). */
 function promosFor(storeId, p) {
-  return Cat.promosForStore(storeId).filter((pr) => pr.type !== 'payment' && (pr.productId ? pr.productId === p.id : pr.generic ? pr.generic === p.generic : pr.category ? pr.category === p.category : true));
+  return Cat.promosForStore(storeId).filter((pr) => !PR.isPayment(pr) && PR.targets(pr, p));
 }
 
 export async function render({ query }) {
@@ -70,7 +72,7 @@ export async function render({ query }) {
     for (const r of recs) {
       const p = Cat.product(r.productId);
       const promos = promosFor(r.storeId, p);
-      const todayCost = volumeCost(r.price, 1, p, promos, today);
+      const todayCost = volumeCost(r.price, 1, p, promos, today, { memberships: new Set(UD.get('profile').memberships || []) });
       const row = { rec: r, p, promos, out: outOfStock.has(`${r.storeId}|${r.productId}`), store: area.find((s) => s.id === r.storeId) };
       const cur = byStore.get(r.storeId);
       if (!cur) byStore.set(r.storeId, { best: row, brands: [row] });
@@ -128,7 +130,7 @@ export async function render({ query }) {
                   h('strong', {}, r.best.store.name),
                   h('small', {}, `${r.best.store.address}${r.best.store.barrio ? `, ${r.best.store.barrio}` : ''}${r.best.store.dist != null ? ` · ${fmtDistance(r.best.store.dist)}` : ''}`),
                   !st.target.productId ? h('small', {}, `Más barata: ${r.best.p.brand}${r.brands.length > 1 ? ` · ${r.brands.length} marcas con precio` : ''}`) : null,
-                  r.best.promos.length ? h('small', { class: 'res-benefits' }, r.best.promos.map((pr) => `${pr.label}${pr.days ? ` (${pr.days.map((d) => DAYS_SHORT[d]).join(', ')})` : ''}`).join(' · ')) : h('small', { class: 'muted' }, 'Sin promoción registrada'),
+                  r.best.promos.length ? h('ul', { class: 'promo-lines' }, r.best.promos.map((pr) => h('li', { class: 'small res-benefits' }, PR.label(pr, Cat), h('span', { class: 'muted' }, ` (fuente: ${PR.SOURCES[PR.normalize(pr).source] || 'catálogo'})`)))) : h('small', { class: 'muted' }, 'Sin promociones registradas'),
                   h('small', { class: 'muted' }, `Precio del ${r.best.rec.date.split('-').reverse().join('/')} · fuente: ${SOURCE[r.best.rec.source] || r.best.rec.source}${r.best.out ? ' · faltante reportado en góndola' : ''}`)
                 ),
                 h('span', { class: 'res-total' }, h('strong', {}, money(r.best.rec.price)), r.best.today.cost < r.best.rec.price ? h('small', { class: 'good' }, `hoy ${money(r.best.today.cost)} c/u`) : null)

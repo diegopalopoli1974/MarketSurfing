@@ -1,6 +1,7 @@
 // Motor analítico determinístico (RNF-01): mismas entradas -> mismo resultado. Sin patrocinios.
 // RF-03 cálculo multidimensional de promociones, RF-04 optimización por día y comercio, RF-15 marcas.
 import * as Cat from '../data/catalog.js';
+import * as PR from './promos.js';
 import { distanceKm } from './geo.js';
 
 export const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -16,26 +17,13 @@ export const tierName = (id) => TIERS.find((t) => t.id === id)?.name || 'Sin gam
 
 const byId = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-function promoApplies(promo, product, day) {
-  if (promo.days && !promo.days.includes(day)) return false;
-  if (promo.productId) return promo.productId === product.id;
-  if (promo.generic) return promo.generic === product.generic;
-  if (promo.category) return promo.category === product.category;
-  return true;
-}
-
-/** Costo de qty unidades aplicando la mejor oferta por volumen/porcentaje (no acumulables entre sí). */
-export function volumeCost(unit, qty, product, promos, day) {
-  let best = { cost: unit * qty, label: null };
-  for (const pr of promos) {
-    if (pr.type === 'payment' || !promoApplies(pr, product, day)) continue;
-    let cost = null;
-    if (pr.type === 'nxm' && qty >= pr.n) cost = (qty - Math.floor(qty / pr.n) * (pr.n - pr.m)) * unit;
-    else if (pr.type === 'second' && qty >= 2) cost = qty * unit - Math.floor(qty / 2) * unit * (pr.pct / 100);
-    else if (pr.type === 'pct') cost = qty * unit * (1 - pr.pct / 100);
-    if (cost !== null && (cost < best.cost - 0.001 || (Math.abs(cost - best.cost) < 0.001 && best.label && pr.label < best.label))) best = { cost, label: pr.label };
-  }
-  return { cost: Math.round(best.cost), label: best.label };
+/**
+ * Costo de qty unidades con la mejor promoción del comercio aplicable (reglas R1 a R4 de la sección 4.6):
+ * vigencia, día, programa de socios, cantidad mínima y tope de unidades; las promociones no se acumulan entre sí.
+ */
+export function volumeCost(unit, qty, product, promos, day, ctx = {}) {
+  const { best } = PR.explainStore(promos, product, unit, qty, day, ctx);
+  return best ? { cost: Math.round(best.cost), label: PR.label(best.promo, Cat), promoId: best.promo.id } : { cost: Math.round(unit * qty), label: null, promoId: null };
 }
 
 /** Mejor línea de un ítem en una sucursal (si no hay marca fija, la equivalente más barata). */
@@ -47,25 +35,17 @@ export function lineFor(storeId, item, ctx, day) {
     const key = `${storeId}|${p.id}`;
     const rec = ctx.prices.get(key);
     if (!rec || ctx.outOfStock.has(key)) continue;
-    const v = volumeCost(rec.price, item.qty, p, promos, day);
-    if (!best || v.cost < best.net) best = { productId: p.id, unit: rec.price, qty: item.qty, gross: rec.price * item.qty, net: v.cost, promo: v.label, verified: rec.verified, date: rec.date };
+    const v = volumeCost(rec.price, item.qty, p, promos, day, ctx);
+    if (!best || v.cost < best.net) best = { productId: p.id, unit: rec.price, qty: item.qty, gross: rec.price * item.qty, net: v.cost, promo: v.label, promoId: v.promoId, verified: rec.verified, date: rec.date };
   }
   return best;
 }
 
-/** Mejor descuento por medio de pago para un subtotal (se paga con un único medio por ticket). */
+/** Mejor descuento por medio de pago para un subtotal (regla R5: un único medio por compra, con días, compra mínima y tope). */
 export function paymentDiscount(storeId, subtotal, day, ctx) {
-  if (!ctx.usePayments || !ctx.issuers.size) return { discount: 0, label: null, issuer: null };
-  let best = { discount: 0, label: null, issuer: null };
-  for (const pr of ctx.promosByStore.get(storeId) || []) {
-    if (pr.type !== 'payment' || !ctx.issuers.has(pr.issuer)) continue;
-    if (pr.days && !pr.days.includes(day)) continue;
-    let d = subtotal * (pr.pct / 100);
-    if (pr.cap) d = Math.min(d, pr.cap);
-    d = Math.round(d);
-    if (d > best.discount) best = { discount: d, label: pr.label, issuer: pr.issuer };
-  }
-  return best;
+  const st = Cat.store(storeId);
+  const { best } = PR.explainPayment(ctx.promosByStore.get(storeId) || [], subtotal, day, st?.chainId, ctx);
+  return best ? { discount: best.discount, label: PR.label(best.promo, Cat), issuer: best.promo.issuer, promoId: best.promo.id, remaining: best.remaining } : { discount: 0, label: null, issuer: null, promoId: null };
 }
 
 export function basketForStore(storeId, items, day, ctx) {
@@ -83,7 +63,7 @@ export function basketForStore(storeId, items, day, ctx) {
 }
 
 /** Prepara el contexto: sucursales en radio sin las excluidas, precios, faltantes y promociones. */
-export async function buildContext({ point, radiusKm, excluded = [], usePayments, payments = [] }) {
+export async function buildContext({ point, radiusKm, excluded = [], usePayments, payments = [], memberships = [], tickets = [] }) {
   const exChains = new Set(excluded.filter((e) => e.kind === 'chain').map((e) => e.id));
   const exStores = new Set(excluded.filter((e) => e.kind === 'store').map((e) => e.id));
   const stores = Cat.stores()
@@ -92,7 +72,7 @@ export async function buildContext({ point, radiusKm, excluded = [], usePayments
     .sort((a, b) => a.dist - b.dist || byId(a.id, b.id));
   const { prices, outOfStock } = await Cat.currentForStores(stores.map((s) => s.id));
   const promosByStore = new Map(stores.map((s) => [s.id, Cat.promosForStore(s.id)]));
-  return { point, radiusKm, stores, prices, outOfStock, promosByStore, usePayments, issuers: new Set(payments.map((p) => p.issuer)) };
+  return { point, radiusKm, stores, prices, outOfStock, promosByStore, usePayments, payments, issuers: new Set(payments.map((p) => p.issuer)), memberships: new Set(memberships), tickets, chainOf: (id) => Cat.store(id)?.chainId };
 }
 
 // ---------------- Reparto de la compra (CU-03 A-2) ----------------
@@ -237,7 +217,7 @@ export function splitPlan(items, ctx, { days, splitDays = false, maxStores = 3, 
 
 /**
  * CU-03 pasos 4 a 7 (y A-2): calcula todas las combinaciones comercio × día.
- * params: { items, point, radiusKm, days, usePayments, payments, excluded, multi, splitDays, maxStores, maxKm, costPerKm }
+ * params: { items, point, radiusKm, days, usePayments, payments, memberships, tickets, excluded, multi, splitDays, maxStores, maxKm, costPerKm }
  */
 export async function optimize(params) {
   const t0 = performance.now();

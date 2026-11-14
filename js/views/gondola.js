@@ -144,7 +144,7 @@ export async function render() {
     const ref = cur?.price || hist.at(-1)?.price || r.product.basePrice || null;
     const promos = Cat.promosForStore(store.id);
     const day = new Date().getDay();
-    const published = volumeCost(1, 1, r.product, promos, day).label; // promo publicada vigente hoy
+    const published = volumeCost(1, 9, r.product, promos, day, { memberships: new Set(UD.get('profile').memberships || []) }).label; // promo publicada vigente hoy (con una cantidad que alcance la mínima)
     clear(stage).append(
       card(
         h('h2', { class: 'h3' }, 'Revisá tu reporte'),
@@ -173,7 +173,7 @@ export async function render() {
     if (r.price) await Cat.recordPrice({ storeId: store.id, productId: r.product.id, price: Math.round(r.price), source: simulate ? 'gondola-sim' : 'gondola' });
     await Cat.setStock(store.id, r.product.id, r.stock === 'out');
     // la promoción vista en góndola queda vigente 7 días para ese producto y comercio
-    if (r.promo && !r.issuer && r.stock !== 'out') await Cat.addPromo({ id: `gon-${store.id}-${r.product.id}`, storeId: store.id, chainId: null, productId: r.product.id, days: null, until: dayKey(new Date(Date.now() + 7 * 86400000)), source: 'gondola', label: `${r.promo.label} en ${r.product.name} (vista en góndola)`, ...promoFields(r.promo) });
+    if (r.promo && !r.issuer && r.stock !== 'out') await Cat.addPromo({ id: `gon-${store.id}-${r.product.id}`, storeId: store.id, chainId: null, productId: r.product.id, days: null, from: dayKey(), until: dayKey(new Date(Date.now() + 7 * 86400000)), membership: null, condition: null, maxUnits: null, source: 'gondola', author: session.account.displayName, authorId: session.reporterId, createdAt: Date.now(), ...promoFields(r.promo) });
     // A-2: promoción o precio distinto de lo publicado
     const priceDiffers = cur && r.price && Math.abs(r.price - cur.price) / cur.price > 0.03;
     const promoDiffers = (r.promo && !published) || (!r.promo && published && r.stock !== 'out');

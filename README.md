@@ -29,13 +29,19 @@ Funciona igual que en el celular: abrí la dirección publicada con Chrome, Edge
 | CU-02 Consultar Precios de un Producto | Más → Precios por producto (o desde un ítem de una lista) | Todos los comercios con precio registrado, ordenados por precio, con promoción, fecha y fuente; en un radio o en todo el catálogo |
 | CU-03 Optimizar Compra | Buscar | Hoy / Mis días / Toda la semana, medios de pago; mapa con calles y nombres, lista con ofertas y medio de pago aplicados, tabla comercio × día; reparto con máximo de comercios y de km, opcionalmente en días (A-2), y si no entra en la distancia, la mejor compra en un solo comercio; recalcular sin faltantes (A-3) |
 | CU-04 Optimizar Marcas | Buscar → detalle → «Ahorrar más…» | Ahorro objetivo (mínimo de cambios) y modo experto por gamas; nunca aplica sin aprobación |
-| CU-05 Perfil de compra | Más → Mi perfil | Medios de pago (sólo tipo y emisor), disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
+| CU-05 Perfil de compra | Más → Mi perfil | Medios de pago (emisor, tipo y red; nunca números), programas de socios, disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
 | CU-06 Reportar en góndola | Más → Reportar en góndola | Geocerca de 50 m por GPS, dictado, intérprete local; promociones vistas se aplican 7 días; precio fuera de rango se confirma y no suma puntos; incidencias → reputación visible en resultados |
 | CU-07 Ticket por OCR | Más → Cargar ticket | Promoción y descuento por línea, medio de pago y su descuento; auditoría (CUIT, ítems − descuentos = total, ≤ 30 días, huella anti duplicado); registro personal para «Mis compras» |
 | CU-08 Sincronizar | Más → Sincronizar (administrador) | Adaptadores (demo y archivo SEPA/Precios Claros .zip/.csv), versiones inmutables, cuarentena ante errores, planificador diario al abrir la app |
 | CU-09 Reportes | Reportes | Índice base 100 por marca con explicación y ejemplo, variación por rubro, mapa de promociones; «Mis compras»: gasto, promociones aprovechadas y beneficio por medio de pago |
-| CU-10 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Carga de precio con alta en el momento de comercio (A-1) o producto (A-2) inexistentes; «Mis cargas» (A-3) |
+| CU-10 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Carga de precio con alta en el momento de comercio (A-1) o producto (A-2) inexistentes; «Mis cargas» (A-3); agregar una promoción al precio (A-4 → CU-13) |
 | CU-11 Asignar nivel | Seguridad y cuenta → Cuentas y roles | Sólo Administrador |
+| CU-12 Consultar Promociones | Más → Promociones | Calendario cadena × día de promociones de medios de pago y listado de promociones de los comercios, con todos sus datos y si el usuario puede usarlas |
+| CU-13 Gestionar Promociones | Más → Gestionar promociones (o desde CU-10, A-4) | Alta, modificación y baja con todos los campos del modelo (sección 4.6 del TP); extiende CU-10 en EP_PrecioRegistrado |
+
+### Promociones (`js/core/promos.js`)
+
+Modelo y reglas de aplicación idénticos a la sección 4.6 del TP: promociones del comercio (producto, cualquier marca, categoría o toda la tienda; NxM, 2da unidad, % o precio especial; cantidad mínima, máximo de unidades, días, vigencia, programa de socios y otra condición) y de medios de pago (emisor, tipo, red, %, tope por compra/semana/mes, compra mínima, descuento en caja o reintegro). En cada detalle de la búsqueda se informa la promoción aplicada y el motivo por el que no se aplicaron las demás.
 
 ### Roles
 

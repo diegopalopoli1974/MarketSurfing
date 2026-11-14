@@ -559,3 +559,15 @@ dialog { color: var(--ink); }
 .avail { display: block; color: var(--accent); }
 .avail.bad { color: var(--bad); }
 .price-row { display: flex; align-items: center; gap: 0.6rem; }
+.promo-preview { background: var(--surface-2); border: 1px dashed var(--line); border-radius: 10px; padding: 0.5rem 0.7rem; font-size: 0.9rem; }
+.promo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.promo-list li { display: flex; gap: 0.5rem; align-items: flex-start; }
+.promo-list li.no { opacity: 0.75; }
+.promo-state { font-weight: 800; width: 1.2rem; text-align: center; }
+.promo-list li.yes .promo-state { color: var(--good, var(--accent)); }
+.promo-list li.no .promo-state { color: var(--bad); }
+.promo-lines { margin: 0.15rem 0; padding-left: 1rem; }
+.promo-why summary { cursor: pointer; color: var(--muted); }
+.cal-cell { vertical-align: top; min-width: 90px; }
+.cal-item { font-size: 0.78rem; border-radius: 6px; padding: 2px 4px; margin-bottom: 2px; background: var(--surface-2); }
+.cal-item.mine { font-weight: 700; border: 1px solid var(--accent); }
