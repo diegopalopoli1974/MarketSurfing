@@ -111,14 +111,14 @@ export async function render() {
       if (!lines.length) return (err.textContent = 'El ticket no tiene ítems');
       setBusy(ok, true, 'Auditando…');
       const data = { storeId: storeSel.value, cuit: cuit.value.trim() || null, date: date.value, time: time.value, total: Number(total.value), items: lines, payment: paySel.value || null, payDiscount: Math.max(0, Number(payDisc.value) || 0) };
-      // Paso 4: auditoría
+      // Paso 6: auditoría
       const a = await OCR.audit(data, Cat.hasTicket);
       if (!a.ok) {
         // E-2
         clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'Ticket rechazado'), h('span', {}, 'No se otorgan puntos.'))), h('ul', { class: 'bullets' }, a.issues.map((i) => h('li', {}, i))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: () => review(t) }, 'Revisar datos'), h('button', { class: 'btn btn-primary', onclick: step1 }, 'Otro ticket')), steps('CU-07 · E-2')));
         return;
       }
-      // Paso 5 / A-1: correspondencia con el catálogo
+      // A-1: líneas sin correspondencia con el catálogo
       const unmatched = lines.filter((l) => !l.product);
       if (unmatched.length) {
         setBusy(ok, false);

@@ -50,7 +50,7 @@ export async function render() {
     clear(stage).append(card(h('h2', { class: 'h3' }, '¿En qué sucursal estás?'), h('div', { class: 'row' }, q, nearBtn), list));
   };
 
-  // Pasos 2-3: validar geocerca por GPS (sin ingreso manual)
+  // Pasos 2-4: validar geocerca por GPS (sin ingreso manual)
   const step2 = async (store) => {
     clear(stage).append(card(h('p', {}, `Verificando que estés en ${store.name}…`), h('div', { class: 'spinner' })));
     if (!simulate) {
@@ -73,7 +73,7 @@ export async function render() {
     clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'No se puede reportar'), h('span', {}, msg))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Elegir otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step2(store) }, 'Reintentar')), steps('CU-06 · E-1')));
   };
 
-  // Paso 4: dictado o texto libre
+  // Paso 5: dictado o texto libre
   const step4 = (store) => {
     const ta = h('textarea', { class: 'input', rows: 4, maxlength: 600, placeholder: 'Ej.: "La leche La Serenísima de 1 litro está a 1890, 2x1 con Mercado Pago" o "No hay aceite Natura"' });
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -137,7 +137,7 @@ export async function render() {
     );
   };
 
-  // Paso 7 en adelante
+  // Paso 8 en adelante
   const review = async (store, r) => {
     const cur = await Cat.currentPrice(store.id, r.product.id);
     const hist = (await Cat.historyForProduct(r.product.id)).filter((x) => x.storeId === store.id).slice(-6);
