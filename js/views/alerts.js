@@ -45,7 +45,7 @@ export async function render({ rerender }) {
       )
     : empty('bell', 'Sin alertas', 'Creá una alerta y te avisamos cuando un producto llegue al precio que buscás.');
 
-  return h('div', { class: 'page' }, pageHeader('Alertas de precio', { subtitle: 'Avisos cuando un producto alcanza tu umbral', help: HELP.alerts }), newAlertForm(rerender), h('h2', { class: 'h3 section-title' }, 'Mis alertas'), listEl, steps('CU-02 · pasos 1–7 · A-1 · A-2 · E-1 · E-2'));
+  return h('div', { class: 'page' }, pageHeader('Alertas de precio', { subtitle: 'Avisos cuando un producto alcanza tu umbral', help: HELP.alerts }), newAlertForm(rerender), h('h2', { class: 'h3 section-title' }, 'Mis alertas'), listEl, steps('CU-02 · pasos 1–7 · A-1 · A-2 · A-3 · E-1 · E-2'));
 }
 
 function newAlertForm(rerender) {

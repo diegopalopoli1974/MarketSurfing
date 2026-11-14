@@ -17,7 +17,7 @@ export async function render() {
   if (collabLevel() < 1)
     return h('div', { class: 'page' }, pageHeader('Cargar ticket', { help: HELP.ticket }), empty('shield', 'Función para Colaboradores', 'Cargar tickets es una tarea de Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-08 · precondición'));
   const stage = h('div');
-  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos', help: HELP.ticket }), stage, steps('CU-08 · pasos 1–9 · A-1 · E-1 · E-2'));
+  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos', help: HELP.ticket }), stage, steps('CU-08 · pasos 1–9 · A-1 · A-2 · E-1 · E-2'));
   const hasOcr = await OCR.ocrAvailable();
 
   // Paso 1
