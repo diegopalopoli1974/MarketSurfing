@@ -1,4 +1,4 @@
-// CU-04 Optimizar Marcas de la Lista (ahorro objetivo / modo experto). Incluye CU-05 por cada cambio aprobado.
+// CU-04 Optimizar Marcas de la Lista (ahorro objetivo / modo experto). Extiende CU-03 en EP_ResultadosCalculados.
 import { h, icon, clear } from '../ui/dom.js';
 import { modal, toast, segmented, steps, field } from '../ui/components.js';
 import * as E from '../core/engine.js';
@@ -113,7 +113,7 @@ export function openBrandOptimizer({ list, items, ctx, reference }) {
           h('button', { class: 'btn btn-primary', onclick: async () => {
             const approved = r.proposal.filter((_, i) => checks[i].checked);
             if (!approved.length) return (toast('La lista queda sin cambios', 'info'), m.close()); // A-2
-            // Paso 5: INCLUYE CU-05 por cada cambio aprobado
+            // Paso 5: aplica cada cambio aprobado como sustitución de marca (nueva versión de la lista)
             let saved = 0;
             for (const row of approved) {
               try {
@@ -125,7 +125,7 @@ export function openBrandOptimizer({ list, items, ctx, reference }) {
             }
             changed = true;
             // Paso 6
-            clear(body).append(h('div', { class: 'banner good' }, icon('check'), h('div', {}, h('strong', {}, `Aplicaste ${approved.length} cambio(s) de marca`), h('span', {}, `Ahorro logrado: ${money(saved)}. La búsqueda se recalcula con la lista actualizada.`))), h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Ver resultados actualizados')), steps('CU-04 · pasos 5–6 (incluye CU-05)'));
+            clear(body).append(h('div', { class: 'banner good' }, icon('check'), h('div', {}, h('strong', {}, `Aplicaste ${approved.length} cambio(s) de marca`), h('span', {}, `Ahorro logrado: ${money(saved)}. La búsqueda se recalcula con la lista actualizada.`))), h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Ver resultados actualizados')), steps('CU-04 · pasos 5–6'));
           } }, 'Aplicar seleccionados')
         ),
         steps('CU-04 · paso 4 · A-2')

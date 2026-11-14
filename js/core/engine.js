@@ -1,5 +1,5 @@
 // Motor analítico determinístico (RNF-01): mismas entradas -> mismo resultado. Sin patrocinios.
-// RF-05 cálculo multidimensional de promociones, RF-06 optimización por día y comercio, RF-17 marcas.
+// RF-03 cálculo multidimensional de promociones, RF-04 optimización por día y comercio, RF-15 marcas.
 import * as Cat from '../data/catalog.js';
 import { distanceKm } from './geo.js';
 
@@ -184,7 +184,16 @@ export function splitPlan(items, ctx, { days, splitDays = false, maxStores = 3, 
       const e = evaluate([vi]);
       if (e.feasible && (!cur || e.score < cur.score)) cur = e;
     });
-    if (!cur) return null;
+    // si ninguna visita entra en la distancia máxima, se informa la mejor compra en un solo comercio (sin tope de km)
+    let relaxed = false;
+    if (!cur) {
+      visits.forEach((_, vi) => {
+        const e = evaluate([vi]);
+        if (!cur || e.missing < cur.missing || (e.missing === cur.missing && e.score < cur.score)) cur = e;
+      });
+      if (!cur) return null;
+      relaxed = true;
+    }
     // 2) agregar visitas mientras baje el puntaje y se respeten los topes
     const improve = () => {
       let changed = false;
@@ -209,21 +218,19 @@ export function splitPlan(items, ctx, { days, splitDays = false, maxStores = 3, 
       if (bestSwap) (cur = bestSwap), (changed = true);
       return changed;
     };
-    for (let guard = 0; guard < 12 && improve(); guard++);
+    for (let guard = 0; !relaxed && guard < 12 && improve(); guard++);
     const missingItems = items.filter((_, i) => cur.assign[i] < 0);
     const parts = cur.parts.sort((a, b) => a.day - b.day || b.total - a.total || byId(a.storeId, b.storeId));
     const total = parts.reduce((a, p) => a + p.total, 0);
     const travel = Math.round(cur.km * costPerKm);
-    return { days: [...new Set(parts.map((p) => p.day))], parts, total, km: cur.km, travel, routes: cur.routes, missing: missingItems, complete: missingItems.length === 0, score: total + travel };
+    return { days: [...new Set(parts.map((p) => p.day))], parts, total, km: cur.km, travel, routes: cur.routes, missing: missingItems, complete: missingItems.length === 0, score: total + travel, relaxed };
   };
-  if (splitDays) {
-    const p = plan(days);
-    return { best: p, byDay: null };
-  }
+  if (splitDays) return { best: plan(days), byDay: null };
   const byDay = new Map();
   for (const d of days) byDay.set(d, plan([d]));
   let best = null;
-  for (const p of byDay.values()) if (p && p.complete && (!best || p.score < best.score)) best = p;
+  const better = (p, q) => !q || (q.relaxed && !p.relaxed) || (p.relaxed === q.relaxed && p.score < q.score);
+  for (const p of byDay.values()) if (p && p.complete && better(p, best)) best = p;
   if (!best) for (const p of byDay.values()) if (p && (!best || p.missing.length < best.missing.length)) best = p;
   return { best, byDay };
 }

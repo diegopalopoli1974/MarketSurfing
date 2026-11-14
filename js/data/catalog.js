@@ -265,7 +265,7 @@ export async function replacePromos(filterFn, newPromos) {
 }
 export const promos = () => mem.promos;
 
-// ---------- Incidencias y reputación (RF-19, reglas públicas RNF-12) ----------
+// ---------- Incidencias y reputación (RF-17, reglas públicas RNF-12) ----------
 export const REPUTATION_RULES = {
   base: 100,
   faltanteConfirmado: 8,
@@ -332,7 +332,7 @@ export async function resetAll() {
   await txDone(tx);
 }
 
-// ---------- Carga manual (CU-11: Colaborador nivel 2 / Administrador) ----------
+// ---------- Carga manual (CU-10: Colaborador nivel 2 / Administrador) ----------
 export async function addPromo(promo) {
   await db.put('promos', promo);
   mem.promos = [...mem.promos.filter((p) => p.id !== promo.id), promo];

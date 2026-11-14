@@ -1,4 +1,4 @@
-// CU-07 Reportar Precios y Stock en Góndola (actor: Colaborador nivel 1 o superior).
+// CU-06 Reportar Precios y Stock en Góndola (actor: Colaborador nivel 1 o superior).
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, steps, field, setBusy, confirmDialog } from '../ui/components.js';
 import { pickProduct } from '../ui/picker.js';
@@ -10,19 +10,18 @@ import { money, volumeCost } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
 import { session, addPoints, POINT_RULES, collabLevel } from '../app/session.js';
 import { HELP } from '../ui/help.js';
-import * as Alerts from '../app/alerts.js';
 
 const GEOFENCE_M = 50;
 
 export async function render() {
   const profile = UD.get('profile');
   if (collabLevel() < 1)
-    return h('div', { class: 'page' }, pageHeader('Reportar en góndola', { help: HELP.gondola }), empty('shield', 'Función para Colaboradores', 'Para reportar en góndola tenés que ser Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-07 · precondición'));
+    return h('div', { class: 'page' }, pageHeader('Reportar en góndola', { help: HELP.gondola }), empty('shield', 'Función para Colaboradores', 'Para reportar en góndola tenés que ser Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-06 · precondición'));
 
   const simulate = !!profile.prefs.simulatePresence;
   const root = h('div', { class: 'page' }, pageHeader('Reportar en góndola', { subtitle: 'Precio, promoción y stock, por voz o texto (sin fotos)', help: HELP.gondola }));
   const stage = h('div');
-  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-07 · pasos 1–11 · A-1 · A-2 · A-3 · A-4 · E-1'));
+  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-06 · pasos 1–11 · A-1 · A-2 · A-3 · A-4 · E-1'));
 
   // Paso 1: seleccionar sucursal
   const step1 = () => {
@@ -71,7 +70,7 @@ export async function render() {
 
   const fail = (store, msg) => {
     // E-1
-    clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'No se puede reportar'), h('span', {}, msg))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Elegir otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step2(store) }, 'Reintentar')), steps('CU-07 · E-1')));
+    clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'No se puede reportar'), h('span', {}, msg))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: step1 }, 'Elegir otra sucursal'), h('button', { class: 'btn btn-primary', onclick: () => step2(store) }, 'Reintentar')), steps('CU-06 · E-1')));
   };
 
   // Paso 4: dictado o texto libre
@@ -133,7 +132,7 @@ export async function render() {
           if (stock.value !== 'out' && !pv) return toast('Ingresá el precio', 'info');
           review(store, { ...r, product, price: pv, stock: stock.value, promo: promo.value ? parsePromoLabel(promo.value) : null, confidence: 1, assisted: true });
         } }, 'Continuar')),
-        steps('CU-07 · A-1')
+        steps('CU-06 · A-1')
       )
     );
   };
@@ -197,8 +196,6 @@ export async function render() {
     if (status.points) await addPoints(status.points, `Reporte en ${store.name}`);
     await Cat.logReport({ storeId: store.id, productId: r.product.id, status: 'vigente' });
     const rep = await Cat.reputation(store.id);
-    // Paso 9: informar al servicio de alertas
-    if (r.price) await Alerts.evaluate([{ storeId: store.id, productId: r.product.id, price: Math.round(r.price), prev: cur?.price }]);
     // Paso 10
     clear(stage).append(
       card(

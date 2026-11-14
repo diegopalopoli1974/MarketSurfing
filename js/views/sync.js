@@ -1,4 +1,4 @@
-// CU-09 Sincronizar Precios Abiertos y Catálogos de APIs (Administrador / Planificador de tareas).
+// CU-08 Sincronizar Precios Abiertos y Catálogos de APIs (Administrador / Planificador de tareas).
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, empty, toast, steps, field, setBusy, confirmDialog } from '../ui/components.js';
@@ -65,7 +65,7 @@ export async function render({ rerender }) {
     card(
       h('h2', { class: 'h3' }, 'Registro de ejecuciones'),
       log.length
-        ? h('ul', { class: 'log' }, log.slice(0, 15).map((r) => h('li', { class: r.ok ? '' : 'bad' }, h('strong', {}, new Date(r.ts).toLocaleString('es-AR')), ` · ${r.actor || 'Sistema'} · ${r.source}`, h('br'), h('small', {}, r.ok ? `${(r.prices ?? 0).toLocaleString('es-AR')} precios leídos · ${(r.changed ?? 0).toLocaleString('es-AR')} nuevos/modificados${r.invalid ? ` · ${r.invalid} inválidos` : ''}${r.alertsSent ? ` · ${r.alertsSent} aviso(s)` : ''}${r.elapsedMs != null ? ` · ${r.elapsedMs} ms` : ''}${r.note ? ` · ${r.note}` : ''}` : `Fuente desactualizada, lote en cuarentena: ${r.error}`))))
+        ? h('ul', { class: 'log' }, log.slice(0, 15).map((r) => h('li', { class: r.ok ? '' : 'bad' }, h('strong', {}, new Date(r.ts).toLocaleString('es-AR')), ` · ${r.actor || 'Sistema'} · ${r.source}`, h('br'), h('small', {}, r.ok ? `${(r.prices ?? 0).toLocaleString('es-AR')} precios leídos · ${(r.changed ?? 0).toLocaleString('es-AR')} nuevos/modificados${r.invalid ? ` · ${r.invalid} inválidos` : ''}${r.elapsedMs != null ? ` · ${r.elapsedMs} ms` : ''}${r.note ? ` · ${r.note}` : ''}` : `Fuente desactualizada, lote en cuarentena: ${r.error}`))))
         : h('p', { class: 'muted' }, 'Sin ejecuciones.')
     ),
     card(
@@ -77,6 +77,6 @@ export async function render({ rerender }) {
         location.reload();
       } }, 'Restablecer'))
     ),
-    steps('CU-09 · pasos 1–7 · E-1')
+    steps('CU-08 · pasos 1–7 · E-1')
   );
 }

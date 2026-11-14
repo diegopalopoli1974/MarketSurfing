@@ -1,4 +1,4 @@
-// CU-06 Gestionar Perfil de Compra (RF-12, RF-13, RF-18, RF-21). Todo opcional y privado (RNF-10).
+// CU-05 Gestionar Perfil de Compra (RF-10, RF-11, RF-16, RF-19). Todo opcional y privado (RNF-10).
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, toast, modal, segmented, field, steps, chip, confirmDialog } from '../ui/components.js';
@@ -29,7 +29,7 @@ export async function render({ query }) {
     clear(body).append(tab === 'pagos' ? payments() : tab === 'dias' ? availability() : tab === 'excluidos' ? excluded(draw) : tiers());
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Mi perfil de compra', { subtitle: 'Opcional y privado: se usa para afinar búsquedas y alertas', help: HELP.profile }), tabs, body, steps('CU-06 · pasos 1–4 · A-1 · E-1'));
+  return h('div', { class: 'page' }, pageHeader('Mi perfil de compra', { subtitle: 'Opcional y privado: se usa para afinar las búsquedas', help: HELP.profile }), tabs, body, steps('CU-05 · pasos 1–4 · A-1 · E-1'));
 }
 
 const confirmSaved = () => toast('Perfil actualizado', 'ok'); // paso 4

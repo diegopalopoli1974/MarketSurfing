@@ -1,4 +1,4 @@
-// "Servicio de Visión OCR" de CU-08: Tesseract.js ejecutado localmente si está instalado en /vendor/tesseract/.
+// "Servicio de Visión OCR" de CU-07: Tesseract.js ejecutado localmente si está instalado en /vendor/tesseract/.
 // Si no está, la app lo informa y se usa el formulario asistido (la auditoría funciona igual).
 import { sha256Hex } from './crypto.js';
 

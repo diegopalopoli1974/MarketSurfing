@@ -7,7 +7,6 @@ import * as UD from '../core/userdata.js';
 import { session, lock, applyPrefs, isAdmin, COLLAB_NAMES } from '../app/session.js';
 import { downloadBackup } from '../app/backup.js';
 import { passwordInput, strengthMeter, showRecoveryCode } from './login.js';
-import { requestPushPermission } from '../app/alerts.js';
 
 export async function render({ query, rerender }) {
   const acc = session.account;
@@ -80,7 +79,7 @@ export async function render({ query, rerender }) {
             return h('li', { class: 'row space ex-row' }, h('span', {}, h('strong', {}, a.displayName), h('small', { class: 'block muted' }, `@${a.username}${a.role === 'admin' ? ' · Administrador' : ''}`)), sel);
           })
         ),
-        steps('CU-13 · pasos 1–4 · E-1')
+        steps('CU-11 · pasos 1–4 · E-1')
       )
     : null;
 
@@ -94,9 +93,9 @@ export async function render({ query, rerender }) {
         'ul',
         { class: 'bullets' },
         h('li', {}, 'Todo queda en este celular: no hay servidores ni copias en la nube.'),
-        h('li', {}, 'Tus listas, alertas, perfil y actividad se cifran con AES-256-GCM. La clave se deriva de tu contraseña (PBKDF2-SHA256, 600.000 iteraciones) y sólo vive en memoria mientras la app está desbloqueada.'),
+        h('li', {}, 'Tus listas, perfil y actividad se cifran con AES-256-GCM. La clave se deriva de tu contraseña (PBKDF2-SHA256, 600.000 iteraciones) y sólo vive en memoria mientras la app está desbloqueada.'),
         h('li', {}, 'La app se bloquea sola por inactividad y al volver de segundo plano. Tras 5 intentos fallidos el ingreso se demora cada vez más.'),
-        h('li', {}, 'La ubicación se usa en el momento y no se guarda (las alertas guardan sólo las zonas que elegís, no tu ubicación).'),
+        h('li', {}, 'La ubicación se usa en el momento y no se guarda.'),
         h('li', {}, 'De los medios de pago sólo se guarda tipo y emisor; nunca números de tarjeta ni de cuenta.')
       )
     ),
@@ -137,12 +136,11 @@ export async function render({ query, rerender }) {
         { value: '1.15', label: 'Grande' },
         { value: '1.3', label: 'Muy grande' },
       ], String(prefs.fontScale || 1), (v) => savePrefs({ fontScale: Number(v) }))),
-      h('div', { class: 'grid2' }, field('Radio por defecto (km)', radius, null, 'Distancia máxima a tu ubicación para considerar comercios en las búsquedas.'), field('Costo de traslado por km ($)', costKm, null, 'Cuánto te «cuesta» moverte un kilómetro (ida y vuelta). Se usa al repartir la compra en varios comercios para no proponer viajes que no convienen.')),
-      h('div', { class: 'row space' }, h('span', {}, 'Notificaciones de alertas'), h('button', { class: 'btn btn-ghost btn-sm', onclick: async () => toast(`Permiso: ${({ granted: 'concedido', denied: 'denegado (cambialo en el navegador)', default: 'sin decidir', unsupported: 'no soportado' })[await requestPushPermission()]}`, 'info') }, 'Permitir'))
+      h('div', { class: 'grid2' }, field('Radio por defecto (km)', radius, null, 'Distancia máxima a tu ubicación para considerar comercios en las búsquedas.'), field('Costo de traslado por km ($)', costKm, null, 'Cuánto te «cuesta» moverte un kilómetro (se multiplica por los km del recorrido). Se usa al repartir la compra en varios comercios para no proponer viajes que no convienen.'))
     ),
     card(
       h('h2', { class: 'h3' }, 'Demostración'),
-      h('label', { class: 'check' }, sim, h('span', {}, 'Simular presencia en sucursal (CU-07)', h('small', { class: 'hint block' }, 'Permite probar el reporte en góndola sin estar en el local. Los reportes simulados no suman puntos.')))
+      h('label', { class: 'check' }, sim, h('span', {}, 'Simular presencia en sucursal (CU-06)', h('small', { class: 'hint block' }, 'Permite probar el reporte en góndola sin estar en el local. Los reportes simulados no suman puntos.')))
     ),
     card(
       h('h2', { class: 'h3' }, `Puntos: ${act.points}`),
@@ -157,7 +155,7 @@ export async function render({ query, rerender }) {
           toast('Copia cifrada descargada. Para restaurarla necesitás tu contraseña.', 'ok', 5000);
         } }, icon('download'), 'Descargar copia de seguridad cifrada'),
         h('button', { class: 'btn btn-ghost', onclick: async () => {
-          if (!(await confirmDialog('Borrar perfil de compra', 'Se eliminan medios de pago, disponibilidad, comercios excluidos y gamas. Tus listas y alertas se mantienen.', { ok: 'Borrar', danger: true }))) return;
+          if (!(await confirmDialog('Borrar perfil de compra', 'Se eliminan medios de pago, disponibilidad, comercios excluidos y gamas. Tus listas se mantienen.', { ok: 'Borrar', danger: true }))) return;
           await UD.update('profile', (p) => {
             p.payments = [];
             p.availability = { buy: [], receive: [], verify: [], slots: {} };

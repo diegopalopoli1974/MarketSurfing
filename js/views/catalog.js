@@ -1,4 +1,4 @@
-// CU-11 Cargar Comercios, Productos y Precios en forma manual (Colaborador nivel 2 / Administrador).
+// CU-10 Cargar Comercios, Productos y Precios en forma manual (Colaborador nivel 2 / Administrador).
 // El alta de comercio (A-1) y de producto (A-2) se hace dentro de la carga del precio y vuelve al paso 2 con lo nuevo elegido.
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
@@ -6,7 +6,6 @@ import { pageHeader, card, empty, toast, field, steps, setBusy, confirmDialog, c
 import { pickProduct } from '../ui/picker.js';
 import * as Cat from '../data/catalog.js';
 import * as Geo from '../core/geo.js';
-import * as Alerts from '../app/alerts.js';
 import { session, collabLevel, isAdmin } from '../app/session.js';
 import { money, DAYS_SHORT, DAYS } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
@@ -53,7 +52,7 @@ async function log(entry) {
 
 export async function render({ query }) {
   if (collabLevel() < 2)
-    return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { help: HELP.catalog }), empty('lock', 'Función para Colaboradores nivel 2', 'La carga manual de comercios, productos y precios la hacen los Colaboradores nivel 2 y el Administrador. El nivel 2 lo otorga el Administrador desde «Seguridad y cuenta».'), steps('CU-12 · precondición'));
+    return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { help: HELP.catalog }), empty('lock', 'Función para Colaboradores nivel 2', 'La carga manual de comercios, productos y precios la hacen los Colaboradores nivel 2 y el Administrador. El nivel 2 lo otorga el Administrador desde «Seguridad y cuenta».'), steps('CU-10 · precondición'));
   let tab = query.get('t') === 'mias' ? 'mias' : 'precio';
   const tabs = h('div', { class: 'tabs', role: 'tablist' });
   const body = h('div');
@@ -67,7 +66,7 @@ export async function render({ query }) {
     Promise.resolve(tab === 'precio' ? priceForm() : myLoads(draw)).then((el) => clear(body).append(el));
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-11 · pasos 1–7 · A-1 · A-2 · A-3 · E-1 · E-2'));
+  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-10 · pasos 1–7 · A-1 · A-2 · A-3 · E-1 · E-2'));
 }
 
 // ---------- Selector de sucursal ----------
@@ -155,7 +154,6 @@ function priceForm() {
       await Cat.addPromo({ id: `man-${st.store.id}-${st.product.id}`, storeId: st.store.id, chainId: null, productId: st.product.id, days: st.days.length ? [...st.days].sort() : null, manual: true, label: `${p.label} en ${st.product.name}${st.days.length ? ` (${st.days.sort().map((d) => DAYS_SHORT[d]).join(', ')})` : ''}`, ...p });
     }
     await log({ what: 'precio', storeId: st.store.id, productId: st.product.id, label: `${st.product.name} · ${money(v)} en ${st.store.name}${promo.value ? ` · ${promo.value}` : ''}` });
-    await Alerts.evaluate([{ storeId: st.store.id, productId: st.product.id, price: Math.round(v), prev: prev?.price }]);
     setBusy(save, false);
     toast('Precio registrado como nueva versión. Quedó en «Mis cargas».', 'ok');
     price.value = '';
@@ -343,7 +341,7 @@ function newEntityModal(title, build, onDone) {
     m.close();
     onDone(entity);
   });
-  m = modal({ title, wide: true, content: h('div', {}, content, steps(title === 'Nuevo comercio' ? 'CU-11 · A-1' : 'CU-11 · A-2')) });
+  m = modal({ title, wide: true, content: h('div', {}, content, steps(title === 'Nuevo comercio' ? 'CU-10 · A-1' : 'CU-10 · A-2')) });
 }
 
 // ---------- Mis cargas ----------

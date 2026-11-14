@@ -1,4 +1,4 @@
-// CU-08 Cargar y Auditar Ticket de Compra vía OCR (con promociones por línea y medio de pago del ticket).
+// CU-07 Cargar y Auditar Ticket de Compra vía OCR (con promociones por línea y medio de pago del ticket).
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, toast, steps, field, setBusy, empty } from '../ui/components.js';
 import { PAYMENT_ISSUERS } from '../data/demo-seed.js';
@@ -11,13 +11,12 @@ import { interpret } from '../core/nlp.js';
 import { money } from '../core/engine.js';
 import { dayKey } from '../data/demo-seed.js';
 import { addPoints, POINT_RULES, collabLevel } from '../app/session.js';
-import * as Alerts from '../app/alerts.js';
 
 export async function render() {
   if (collabLevel() < 1)
-    return h('div', { class: 'page' }, pageHeader('Cargar ticket', { help: HELP.ticket }), empty('shield', 'Función para Colaboradores', 'Cargar tickets es una tarea de Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-08 · precondición'));
+    return h('div', { class: 'page' }, pageHeader('Cargar ticket', { help: HELP.ticket }), empty('shield', 'Función para Colaboradores', 'Cargar tickets es una tarea de Colaborador: marcá «Días para colaborar» en tu perfil y aceptá el rol.', h('a', { class: 'btn btn-primary', href: '#/perfil?s=dias' }, 'Ir a disponibilidad')), steps('CU-07 · precondición'));
   const stage = h('div');
-  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos', help: HELP.ticket }), stage, steps('CU-08 · pasos 1–9 · A-1 · A-2 · E-1 · E-2'));
+  const root = h('div', { class: 'page' }, pageHeader('Cargar ticket', { subtitle: 'Precios verificados por compra real · suma puntos', help: HELP.ticket }), stage, steps('CU-07 · pasos 1–9 · A-1 · A-2 · E-1 · E-2'));
   const hasOcr = await OCR.ocrAvailable();
 
   // Paso 1
@@ -46,7 +45,7 @@ export async function render() {
       if (text.replace(/\s/g, '').length < 30 || (!t.items.length && !t.total)) throw new Error('ilegible');
       review(t);
     } catch (e) {
-      clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'Imagen ilegible'), h('span', {}, e.message === 'ilegible' ? 'Capturá el ticket nuevamente, con buena luz y sin pliegues.' : e.message))), h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: step1 }, 'Capturar de nuevo')), steps('CU-08 · E-1')));
+      clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'Imagen ilegible'), h('span', {}, e.message === 'ilegible' ? 'Capturá el ticket nuevamente, con buena luz y sin pliegues.' : e.message))), h('div', { class: 'row end' }, h('button', { class: 'btn btn-primary', onclick: step1 }, 'Capturar de nuevo')), steps('CU-07 · E-1')));
     }
   };
 
@@ -116,7 +115,7 @@ export async function render() {
       const a = await OCR.audit(data, Cat.hasTicket);
       if (!a.ok) {
         // E-2
-        clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'Ticket rechazado'), h('span', {}, 'No se otorgan puntos.'))), h('ul', { class: 'bullets' }, a.issues.map((i) => h('li', {}, i))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: () => review(t) }, 'Revisar datos'), h('button', { class: 'btn btn-primary', onclick: step1 }, 'Otro ticket')), steps('CU-08 · E-2')));
+        clear(stage).append(card(h('div', { class: 'banner bad' }, icon('alert'), h('div', {}, h('strong', {}, 'Ticket rechazado'), h('span', {}, 'No se otorgan puntos.'))), h('ul', { class: 'bullets' }, a.issues.map((i) => h('li', {}, i))), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: () => review(t) }, 'Revisar datos'), h('button', { class: 'btn btn-primary', onclick: step1 }, 'Otro ticket')), steps('CU-07 · E-2')));
         return;
       }
       // Paso 5 / A-1: correspondencia con el catálogo
@@ -171,7 +170,6 @@ export async function render() {
     act.tickets = act.tickets.slice(0, 200);
     await UD.save('activity');
     if (pts) await addPoints(pts, `Ticket de ${Cat.store(data.storeId).name}`);
-    await Alerts.evaluate(changes);
     clear(stage).append(
       card(
         h('div', { class: 'banner good' }, icon('check'), h('div', {}, h('strong', {}, 'Ticket registrado'), h('span', {}, `${data.items.length} precio(s) verificados por compra real. ${pts ? `Sumaste ${pts} puntos (total ${UD.get('activity').points}).` : 'Alcanzaste el tope diario de tickets con puntos.'}`))),

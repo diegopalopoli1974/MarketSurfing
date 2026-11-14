@@ -555,3 +555,7 @@ dialog { color: var(--ink); }
 .kpi { border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem; background: var(--surface); }
 .kpi strong { display: block; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 .kpi small { color: var(--muted); }
+.brand-sel { width: auto; max-width: 11rem; min-height: 38px; padding: 0.2rem 0.5rem; font-size: 0.85rem; }
+.avail { display: block; color: var(--accent); }
+.avail.bad { color: var(--bad); }
+.price-row { display: flex; align-items: center; gap: 0.6rem; }

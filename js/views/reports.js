@@ -1,4 +1,4 @@
-// CU-10 Consultar Reportes de Mercado (índice por marca, analítica agregada y anónima) y estadísticas personales «Mis compras».
+// CU-09 Consultar Reportes de Mercado (índice por marca, analítica agregada y anónima) y estadísticas personales «Mis compras».
 import { HELP } from '../ui/help.js';
 import { h, icon, clear } from '../ui/dom.js';
 import { pageHeader, card, segmented, field, spinner, steps } from '../ui/components.js';
@@ -227,7 +227,7 @@ export async function render() {
         h('h3', { class: 'h4' }, 'Dónde comprás'),
         barChart({ rows: [...byStore.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, v]) => ({ label: Cat.store(id)?.name || 'Comercio eliminado', value: v })), format: (v) => money(v), ariaLabel: 'Gasto por comercio' }),
         advice.length ? h('div', { class: 'banner' }, icon('info'), h('div', {}, h('strong', {}, 'Para decidir'), h('ul', { class: 'bullets' }, advice.map((a) => h('li', {}, a))))) : null,
-        h('details', { class: 'explain' }, h('summary', {}, icon('info', { size: 16 }), ' ¿De dónde salen estos datos?'), h('p', {}, 'De tus tickets cargados (CU-08): total pagado, descuentos por promoción de cada línea y el descuento o reintegro del medio de pago. Beneficio = descuentos ÷ (gasto + descuentos). Los datos son privados: están cifrados en este dispositivo y no se comparten.')),
+        h('details', { class: 'explain' }, h('summary', {}, icon('info', { size: 16 }), ' ¿De dónde salen estos datos?'), h('p', {}, 'De tus tickets cargados (CU-07): total pagado, descuentos por promoción de cada línea y el descuento o reintegro del medio de pago. Beneficio = descuentos ÷ (gasto + descuentos). Los datos son privados: están cifrados en este dispositivo y no se comparten.')),
         detailed.length < tks.length ? h('p', { class: 'muted small' }, `${tks.length - detailed.length} ticket(s) antiguos no tienen detalle de promociones ni medio de pago.`) : null
       )
     );
@@ -248,6 +248,6 @@ export async function render() {
     pageHeader('Reportes de mercado', { subtitle: 'Índices por marca, variación por rubro, promociones por zona y tus compras', help: HELP.reports }),
     card(typeSeg, genField, field('Período', period), zoneBox, h('button', { class: 'btn btn-primary btn-block', onclick: go }, icon('chart'), 'Ver reporte')),
     out,
-    steps('CU-10 · pasos 1–6 · A-1 · A-2 · A-3')
+    steps('CU-09 · pasos 1–6 · A-1 · A-2 · A-3')
   );
 }

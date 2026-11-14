@@ -25,28 +25,26 @@ Funciona igual que en el celular: abrí la dirección publicada con Chrome, Edge
 
 | CU | Pantalla | Notas de implementación |
 |---|---|---|
-| CU-01 Gestionar Listas | Listas | Cada guardado (nombre, productos o cantidades) crea una versión; historial y restauración como versión nueva (A-3); barra «Cambios sin guardar» y aviso al salir (A-4); baja lógica (A-1) |
-| CU-02 Alertas de umbral | Más → Alertas | Una o más zonas (barrio, localidad o dirección geocodificada, o un punto tocado en el mapa), cada una con su radio; sin GPS |
-| CU-03 Optimizar Compra | Buscar | Hoy / Mis días / Toda la semana, medios de pago; mapa con calles y nombres, lista con ofertas y medio de pago aplicados, tabla comercio × día; reparto con máximo de comercios y de km, opcionalmente en distintos días (A-2); recalcular sin faltantes (A-3) |
-| CU-04 Optimizar Marcas | Buscar → detalle → «Ahorrar más…» | Ahorro objetivo (mínimo de cambios) y modo experto por gamas; nunca aplica sin aprobación; incluye CU-05 |
-| CU-05 Sustituir Marca | Listas → «Cambiar marca» | Valida equivalencia (categoría, presentación, unidad), nueva versión y «Deshacer» |
-| CU-06 Perfil de compra | Más → Mi perfil | Medios de pago (sólo tipo y emisor), disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
-| CU-07 Reportar en góndola | Más → Reportar en góndola | Geocerca de 50 m por GPS, dictado, intérprete local; promociones vistas se aplican 7 días; precio fuera de rango se confirma y no suma puntos; incidencias → reputación visible en resultados |
-| CU-08 Ticket por OCR | Más → Cargar ticket | Promoción y descuento por línea, medio de pago y su descuento; auditoría (CUIT, ítems − descuentos = total, ≤ 30 días, huella anti duplicado); registro personal para «Mis compras» |
-| CU-09 Sincronizar | Más → Sincronizar (administrador) | Adaptadores (demo y archivo SEPA/Precios Claros .zip/.csv), versiones inmutables, cuarentena ante errores, planificador diario al abrir la app |
-| CU-10 Reportes | Reportes | Índice base 100 por marca con explicación y ejemplo, variación por rubro, mapa de promociones; «Mis compras»: gasto, promociones aprovechadas y beneficio por medio de pago |
-| CU-11 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Carga de precio con alta en el momento de comercio (A-1) o producto (A-2) inexistentes; «Mis cargas» (A-3) |
-| CU-12 Evaluar alertas | (incluido) | Se ejecuta cada vez que CU-07, CU-08, CU-09 o CU-11 actualizan precios; un aviso por alerta, sin repetir en 24 h |
-| CU-13 Asignar nivel | Seguridad y cuenta → Cuentas y roles | Sólo Administrador |
+| CU-01 Gestionar Listas | Listas | Cada guardado (nombre, productos, cantidades o marcas) crea una versión; selector de marca por ítem con «Cualquier marca» (A-2); disponibilidad por producto; historial y restauración (A-3); aviso de cambios sin guardar (A-4); baja lógica (A-1) |
+| CU-02 Consultar Precios de un Producto | Más → Precios por producto (o desde un ítem de una lista) | Todos los comercios con precio registrado, ordenados por precio, con promoción, fecha y fuente; en un radio o en todo el catálogo |
+| CU-03 Optimizar Compra | Buscar | Hoy / Mis días / Toda la semana, medios de pago; mapa con calles y nombres, lista con ofertas y medio de pago aplicados, tabla comercio × día; reparto con máximo de comercios y de km, opcionalmente en días (A-2), y si no entra en la distancia, la mejor compra en un solo comercio; recalcular sin faltantes (A-3) |
+| CU-04 Optimizar Marcas | Buscar → detalle → «Ahorrar más…» | Ahorro objetivo (mínimo de cambios) y modo experto por gamas; nunca aplica sin aprobación |
+| CU-05 Perfil de compra | Más → Mi perfil | Medios de pago (sólo tipo y emisor), disponibilidad, comercios excluidos con motivo, gamas personales, consentimiento de Colaborador (A-1) |
+| CU-06 Reportar en góndola | Más → Reportar en góndola | Geocerca de 50 m por GPS, dictado, intérprete local; promociones vistas se aplican 7 días; precio fuera de rango se confirma y no suma puntos; incidencias → reputación visible en resultados |
+| CU-07 Ticket por OCR | Más → Cargar ticket | Promoción y descuento por línea, medio de pago y su descuento; auditoría (CUIT, ítems − descuentos = total, ≤ 30 días, huella anti duplicado); registro personal para «Mis compras» |
+| CU-08 Sincronizar | Más → Sincronizar (administrador) | Adaptadores (demo y archivo SEPA/Precios Claros .zip/.csv), versiones inmutables, cuarentena ante errores, planificador diario al abrir la app |
+| CU-09 Reportes | Reportes | Índice base 100 por marca con explicación y ejemplo, variación por rubro, mapa de promociones; «Mis compras»: gasto, promociones aprovechadas y beneficio por medio de pago |
+| CU-10 Cargar catálogo manual | Más → Cargar comercios, productos y precios | Carga de precio con alta en el momento de comercio (A-1) o producto (A-2) inexistentes; «Mis cargas» (A-3) |
+| CU-11 Asignar nivel | Seguridad y cuenta → Cuentas y roles | Sólo Administrador |
 
 ### Roles
 
 | Rol | Puede |
 |---|---|
-| Comprador | Listas, búsqueda, marcas, alertas, perfil, reportes |
-| Colaborador nivel 1 | Además: cargar tickets (CU-08) y reportar en góndola (CU-07). Se obtiene aceptando el rol desde *Mi perfil → Disponibilidad → Días para colaborar* |
-| Colaborador nivel 2 | Además: cargar comercios, productos y precios a mano (CU-11). Lo otorga el Administrador en *Seguridad y cuenta → Cuentas y roles* |
-| Administrador | Todo, más sincronización (CU-09) y asignación de niveles (CU-13). Es la primera cuenta creada en el dispositivo |
+| Comprador | Listas, precios por producto, búsqueda, marcas, perfil, reportes |
+| Colaborador nivel 1 | Además: cargar tickets (CU-07) y reportar en góndola (CU-06). Se obtiene aceptando el rol desde *Mi perfil → Disponibilidad → Días para colaborar* |
+| Colaborador nivel 2 | Además: cargar comercios, productos y precios a mano (CU-10). Lo otorga el Administrador en *Seguridad y cuenta → Cuentas y roles* |
+| Administrador | Todo, más sincronización (CU-08) y asignación de niveles (CU-11). Es la primera cuenta creada en el dispositivo |
 
 ### Ayuda en pantalla
 
@@ -56,27 +54,27 @@ Cada pantalla muestra una etiqueta discreta con los pasos de la especificación 
 
 ### Adaptaciones por ser 100 % local
 
-- **Servicios externos** del modelo: GPS real del teléfono; «Servicio IA (LLM)» → intérprete local de texto (no envía datos); «Notificaciones push» → notificaciones locales del service worker; «Cron Daemon» → sincronización automática una vez por día al abrir la app.
+- **Servicios externos** del modelo: GPS real del teléfono; «Servicio IA (LLM)» → intérprete local de texto (no envía datos); «Cron Daemon» → sincronización automática una vez por día al abrir la app.
 - **Administrador**: la primera cuenta creada en el dispositivo.
 - **Catálogo de demostración**: unos 100 productos genéricos (≈280 con sus marcas) y unas 200 sucursales en CABA y el conurbano, con 12 meses de historia.
 - **Direcciones**: la búsqueda en línea usa Georef (servicio oficial de normalización de direcciones de Argentina) y, si no encuentra, OpenStreetMap. Sin conexión se ofrece una lista de barrios y localidades.
 - **Mapas**: calles y barrios de OpenStreetMap (las teselas vistas se guardan para usarlas sin conexión); sin conexión se dibuja un mapa simplificado con distancias.
-- **Precios Claros**: el navegador no puede descargar el dataset directamente; se descarga el .zip de SEPA y se importa desde CU-09 filtrando por radio.
-- **Presencia simulada** (Seguridad y cuenta → Demostración): permite mostrar CU-07 sin estar en un local; esos reportes no suman puntos.
+- **Precios Claros**: el navegador no puede descargar el dataset directamente; se descarga el .zip de SEPA y se importa desde CU-08 filtrando por radio.
+- **Presencia simulada** (Seguridad y cuenta → Demostración): permite mostrar CU-06 sin estar en un local; esos reportes no suman puntos.
 
 ## Seguridad
 
 - Contraseñas: mínimo 10 caracteres, se rechazan comunes y las que contienen el usuario.
-- Cifrado: cada cuenta tiene una clave aleatoria AES-256-GCM que cifra listas, alertas, perfil y actividad. Esa clave se guarda envuelta con una clave derivada de la contraseña (PBKDF2-SHA256, 600.000 iteraciones) y con otra derivada del **código de recuperación** (120 bits). Sin contraseña ni código, los datos no se pueden leer.
+- Cifrado: cada cuenta tiene una clave aleatoria AES-256-GCM que cifra listas, perfil y actividad. Esa clave se guarda envuelta con una clave derivada de la contraseña (PBKDF2-SHA256, 600.000 iteraciones) y con otra derivada del **código de recuperación** (120 bits). Sin contraseña ni código, los datos no se pueden leer.
 - Huella/rostro: passkey con la extensión **PRF** (Chrome Android, Safari iOS 18+); la huella desenvuelve la misma clave. Si el equipo no soporta PRF, la opción no se ofrece.
 - Bloqueo automático por inactividad (configurable) y al volver de segundo plano; demora creciente tras 5 intentos fallidos.
 - Sin `innerHTML` con datos: toda la interfaz se construye con nodos de texto. Content-Security-Policy estricta, sin scripts de terceros, sin referrer.
-- Ubicación sólo en memoria (RNF-03); las alertas guardan únicamente las zonas elegidas por el usuario.
+- Ubicación sólo en memoria (RNF-03); no se guardan historiales de ubicación.
 - Copia de seguridad cifrada descargable y eliminación de cuenta.
 
 ## OCR real (opcional)
 
-Sin el motor instalado, CU-08 usa un formulario asistido. Para OCR en el teléfono, agregá [Tesseract.js](https://github.com/naptha/tesseract.js) v5 en `vendor/tesseract/`:
+Sin el motor instalado, CU-07 usa un formulario asistido. Para OCR en el teléfono, agregá [Tesseract.js](https://github.com/naptha/tesseract.js) v5 en `vendor/tesseract/`:
 
 ```
 vendor/tesseract/tesseract.min.js
@@ -94,7 +92,7 @@ index.html, manifest.webmanifest, sw.js   PWA (sw.js se genera con: node tools/b
 css/app.css                                estilos (claro/oscuro, letra ajustable)
 js/core/      crypto, auth, userdata (cifrado), idb, engine (motor), geo, nlp, ocr
 js/data/      catalog (IndexedDB), demo-seed, sepa (lector ZIP/CSV)
-js/app/       session, alerts, sync, listsvc, backup
+js/app/       session, nav, sync, listsvc, backup
 js/views/     una vista por caso de uso
 js/ui/        DOM seguro, componentes, mapa SVG, gráficos, selectores
 ```

@@ -2,11 +2,10 @@
 import { openDb, Store, deleteDb } from './idb.js';
 import { encryptJson, decryptJson } from './crypto.js';
 
-export const DOCS = ['lists', 'alerts', 'profile', 'activity'];
+export const DOCS = ['lists', 'profile', 'activity'];
 
 const DEFAULTS = {
   lists: () => [],
-  alerts: () => [],
   profile: () => ({
     payments: [],
     availability: { buy: [], receive: [], verify: [], slots: {} },
@@ -15,7 +14,7 @@ const DEFAULTS = {
     tiers: {},
     prefs: { radiusKm: 3, costPerKm: 100, autoLockMin: 5, theme: 'auto', fontScale: 1, simulatePresence: false },
   }),
-  activity: () => ({ points: 0, pointsLog: [], reports: [], tickets: [], inbox: [], lastAlertEval: 0 }),
+  activity: () => ({ points: 0, pointsLog: [], reports: [], tickets: [] }),
 };
 
 let state = null; // { db, key, username, cache }
@@ -35,6 +34,7 @@ export async function startSession(accountId, username, key) {
     const box = await db.get('docs', name);
     cache[name] = box ? await decryptJson(key, box, `ms:${username}:${name}`) : DEFAULTS[name]();
   }
+  await db.delete('docs', 'alerts').catch(() => {}); // documento de una función retirada
   // completa claves nuevas del perfil sin pisar las existentes
   const defProfile = DEFAULTS.profile();
   cache.profile = { ...defProfile, ...cache.profile, prefs: { ...defProfile.prefs, ...(cache.profile.prefs || {}) }, availability: { ...defProfile.availability, ...(cache.profile.availability || {}) } };

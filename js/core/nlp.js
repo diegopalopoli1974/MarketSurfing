@@ -1,4 +1,4 @@
-// "Servicio IA" de CU-07 implementado como intérprete LOCAL de texto coloquial (sin enviar datos a la nube).
+// "Servicio IA" de CU-06 implementado como intérprete LOCAL de texto coloquial (sin enviar datos a la nube).
 // Extrae producto, precio, promoción y estado de stock con un nivel de confianza.
 import * as Cat from '../data/catalog.js';
 

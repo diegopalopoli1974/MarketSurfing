@@ -1,8 +1,7 @@
-// CU-09: sincronización de precios mediante adaptadores (RNF-07). El "Planificador" corre al abrir la app.
+// CU-08: sincronización de precios mediante adaptadores (RNF-07). El "Planificador" corre al abrir la app.
 import * as Cat from '../data/catalog.js';
 import { rng, dayKey, buildPromos } from '../data/demo-seed.js';
 import { importSepa } from '../data/sepa.js';
-import * as Alerts from './alerts.js';
 
 /** Adaptador de demostración: simula la publicación diaria de Precios Claros. */
 export const DemoAdapter = {
@@ -95,10 +94,9 @@ export async function runSync(adapters, actor, onProgress = () => {}) {
       results.push({ ts: Date.now(), source: a.name, actor, ok: false, error: e.message });
     }
   }
-  // paso 6: informar precios modificados al servicio de alertas
-  const alertsSent = await Alerts.evaluate(allChanges).catch(() => 0);
+  // paso 6: registrar el resultado y las métricas de la ejecución
   const elapsed = Math.round(performance.now() - t0);
-  results.forEach((r) => ((r.elapsedMs = elapsed), (r.alertsSent = alertsSent)));
+  results.forEach((r) => ((r.elapsedMs = elapsed), (r.changes = allChanges.length)));
   const log = (await Cat.meta.get('syncLog')) || [];
   await Cat.meta.set('syncLog', [...results, ...log].slice(0, 50));
   if (results.some((r) => r.ok)) await Cat.meta.set('lastSync', dayKey());

@@ -341,13 +341,15 @@ export async function render({ query }) {
     let plan = best;
     const body = h('div');
     if (!best) {
-      results.append(h('div', { class: 'card warn', role: 'alert' }, h('strong', {}, 'Ningún comercio queda dentro de la distancia máxima'), h('p', {}, `Con ${st.maxKm} km de recorrido total (ida y vuelta) no se llega a ningún comercio del radio. Aumentá la distancia máxima a recorrer.`), steps('CU-03 · A-2 · E-3')));
+      results.append(h('div', { class: 'card warn', role: 'alert' }, h('strong', {}, 'No hay precios para estos productos en los comercios del radio'), h('p', {}, 'Ampliá el radio o revisá en «Precios por producto» qué comercios tienen cada producto.'), steps('CU-03 · A-2')));
       return;
     }
     const draw = () => {
       clear(body);
       const singleDay = !st.splitDays ? res.byDay.get(plan.days[0])?.best : singleBest;
       const net = singleDay ? singleDay.total - plan.total - plan.travel : null;
+      if (plan.relaxed)
+        body.append(h('p', { class: 'notice warn', role: 'status' }, icon('alert'), `Ningún reparto entra en ${st.maxKm} km de recorrido: se muestra la mejor compra en un solo comercio (recorrido ${km(plan.km)}). Si querés repartir, aumentá la distancia máxima.`, steps('CU-03 · A-2 · E-3')));
       body.append(
         h(
           'div',
@@ -356,7 +358,7 @@ export async function render({ query }) {
           h(
             'div',
             {},
-            h('strong', {}, plan.parts.length > 1 ? `Repartiendo en ${plan.parts.length} visita(s)${st.splitDays ? ` en ${plan.days.length} día(s)` : ` el ${DAYS[plan.days[0]].toLowerCase()}`}: ${money(plan.total)}` : `Con este costo de traslado conviene un solo comercio: ${money(plan.total)}`),
+            h('strong', {}, plan.parts.length > 1 ? `Repartiendo en ${plan.parts.length} visita(s)${st.splitDays ? ` en ${plan.days.length} día(s)` : ` el ${DAYS[plan.days[0]].toLowerCase()}`}: ${money(plan.total)}` : `Con estos topes y este costo de traslado conviene un solo comercio: ${money(plan.total)}`),
             h('span', {}, `Recorrido ${km(plan.km)} (traslado estimado ${money(plan.travel)}) · topes: ${st.maxStores} comercios y ${st.maxKm} km`, net != null ? ` · ${net > 0 ? `ahorrás ${money(net)} frente a comprar todo en ${Cat.store(singleDay.storeId).name}${st.splitDays ? ` el ${DAYS[singleDay.day].toLowerCase()}` : ''}, ya descontado el traslado` : `comprar todo en ${Cat.store(singleDay.storeId).name} cuesta lo mismo o menos`}` : '')
           )
         )

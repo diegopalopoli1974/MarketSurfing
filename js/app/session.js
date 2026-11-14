@@ -60,7 +60,7 @@ export const isAdmin = () => session.account?.role === 'admin';
 export const collabLevel = () => (isAdmin() ? 2 : session.account?.collab || 0);
 export const COLLAB_NAMES = ['Comprador', 'Colaborador nivel 1', 'Colaborador nivel 2'];
 
-// ---------- Puntos (RF-10, reglas públicas y determinísticas RNF-12) ----------
+// ---------- Puntos (RF-08, reglas públicas y determinísticas RNF-12) ----------
 export const POINT_RULES = {
   reporte: 10,
   reporteConIncidencia: 5,
@@ -79,10 +79,3 @@ export async function addPoints(amount, reason) {
   });
 }
 
-export async function notifyInbox(title, body, kind = 'alert') {
-  await UD.update('activity', (a) => {
-    a.inbox.unshift({ id: crypto.randomUUID(), ts: Date.now(), title, body, kind, read: false });
-    a.inbox = a.inbox.slice(0, 100);
-  });
-  window.dispatchEvent(new CustomEvent('ms:inbox'));
-}

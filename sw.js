@@ -1,6 +1,6 @@
 // Service worker de MarketSurfing: la app funciona completa sin conexión.
 // Archivo generado por tools/build-sw.mjs — no editar a mano.
-const VERSION = '7902ebb231e6';
+const VERSION = '826850c70f2b';
 const CACHE = `ms-shell-${VERSION}`;
 const RUNTIME = 'ms-runtime-v1';
 const TILES = 'ms-tiles-v1';
@@ -9,7 +9,6 @@ const FILES = [
   "index.html",
   "manifest.webmanifest",
   "css/app.css",
-  "js/app/alerts.js",
   "js/app/backup.js",
   "js/app/listsvc.js",
   "js/app/nav.js",
@@ -34,14 +33,13 @@ const FILES = [
   "js/ui/location.js",
   "js/ui/map.js",
   "js/ui/picker.js",
-  "js/views/alerts.js",
   "js/views/brands.js",
   "js/views/catalog.js",
   "js/views/gondola.js",
   "js/views/home.js",
-  "js/views/inbox.js",
   "js/views/lists.js",
   "js/views/login.js",
+  "js/views/prices.js",
   "js/views/profile.js",
   "js/views/reports.js",
   "js/views/search.js",
@@ -104,14 +102,4 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));
-});
-
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((list) => {
-      for (const c of list) if ('focus' in c) return c.navigate('./#/avisos').then((w) => w && w.focus());
-      return self.clients.openWindow('./#/avisos');
-    })
-  );
 });

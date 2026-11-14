@@ -57,13 +57,3 @@ self.addEventListener('fetch', (e) => {
   }
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));
 });
-
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((list) => {
-      for (const c of list) if ('focus' in c) return c.navigate('./#/avisos').then((w) => w && w.focus());
-      return self.clients.openWindow('./#/avisos');
-    })
-  );
-});

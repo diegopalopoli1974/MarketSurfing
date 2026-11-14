@@ -23,7 +23,7 @@ const metersPerPx = (lat, z) => (156543.03392 * Math.cos((lat * Math.PI) / 180))
  * center: { lat, lng } (punto del usuario o de la zona)
  * radiusKm: radio a encuadrar (y anillo de borde si showRadius)
  * markers: [{ id, lat, lng, fill?, label?, name?, incomplete?, missing?, title, selected?, order? }]
- * zones: [{ lat, lng, radiusKm, label }] — círculos de zonas (alertas)
+ * zones: [{ lat, lng, radiusKm, label }] — círculos de zonas
  * labels: 'all' | 'top' | 'none' — nombres de comercio junto a los marcadores
  * onSelect(id) · onPick({ lat, lng }) (tocar el mapa para marcar un punto)
  */
@@ -76,7 +76,7 @@ export function svgMap({ center, radiusKm = 3, markers = [], zones = [], onSelec
         svg.append(s('text', { x: cp.x + 4, y: cp.y - rr - 3, class: 'map-ring-label', text: fmtDistance(r) }));
       }
     }
-    // zonas (alertas)
+    // zonas
     for (const zn of zones) {
       const p = proj(zn);
       svg.append(s('circle', { cx: p.x, cy: p.y, r: (zn.radiusKm * 1000) / mpp, class: 'map-zone' }), s('circle', { cx: p.x, cy: p.y, r: 4, class: 'map-zone-center' }));

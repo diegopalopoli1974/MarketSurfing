@@ -1,4 +1,4 @@
-// Servicio de listas: versionado incremental (RF-01) y sustitución de marca (CU-05 / RF-16).
+// Servicio de listas: versionado incremental (RF-01) y sustitución de marca (RF-14), usada por CU-01 y CU-04.
 import * as UD from '../core/userdata.js';
 import * as Cat from '../data/catalog.js';
 
@@ -62,7 +62,7 @@ export async function referencePrice(productId) {
   return Math.round(recs.reduce((a, r) => a + r.price, 0) / recs.length);
 }
 
-/** CU-05 paso 2: equivalencia (misma categoría, presentación y unidad = mismo genérico) y distinta de la actual. */
+/** Equivalencia (misma categoría, presentación y unidad = mismo genérico) y distinta de la actual. */
 export function checkEquivalence(fromProductIdOrGeneric, toProductId) {
   const to = Cat.product(toProductId);
   if (!to) return 'La marca destino no existe en el catálogo';
@@ -75,7 +75,7 @@ export function checkEquivalence(fromProductIdOrGeneric, toProductId) {
 }
 
 /**
- * CU-05 pasos 2 y 3: sustituye la marca del ítem (por genérico) como nueva versión.
+ * CU-04 paso 5: sustituye la marca del ítem (por genérico) como nueva versión de la lista.
  * Devuelve { list, fromProductId, toProductId, saving }.
  */
 export async function substituteBrand(listId, generic, toProductId, origin = 'manual') {
@@ -95,14 +95,4 @@ export async function substituteBrand(listId, generic, toProductId, origin = 'ma
   const fromName = fromProductId ? Cat.product(fromProductId).brand : 'cualquier marca';
   await saveVersion(listId, currentVersion(list).name, items, `Cambio de marca (${origin}): ${fromName} → ${Cat.product(toProductId).brand}`);
   return { list, fromProductId, toProductId, saving: a != null && b != null ? (a - b) * it.qty : null };
-}
-
-/** CU-05 A-1: deshacer, restaurando la marca anterior como nueva versión. */
-export async function undoSubstitution(listId, generic, fromProductId) {
-  const list = getList(listId);
-  const items = currentItems(list).map((i) => ({ ...i }));
-  const it = items.find((i) => i.generic === generic);
-  if (!it) return;
-  it.productId = fromProductId || null;
-  await saveVersion(listId, currentVersion(list).name, items, 'Deshacer cambio de marca');
 }
