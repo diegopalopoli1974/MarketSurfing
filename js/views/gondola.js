@@ -21,7 +21,7 @@ export async function render() {
   const simulate = !!profile.prefs.simulatePresence;
   const root = h('div', { class: 'page' }, pageHeader('Reportar en góndola', { subtitle: 'Precio, promoción y stock, por voz o texto (sin fotos)', help: HELP.gondola }));
   const stage = h('div');
-  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-06 · pasos 1–11 · A-1 · A-2 · A-3 · A-4 · E-1'));
+  root.append(simulate ? h('p', { class: 'notice warn' }, icon('alert'), 'Presencia simulada activa (modo demostración): no se valida el GPS y los reportes no suman puntos.') : null, stage, steps('CU-06 · pasos 1–10 · A-1 · A-2 · A-3 · A-4 · E-1'));
 
   // Paso 1: seleccionar sucursal
   const step1 = () => {

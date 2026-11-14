@@ -66,7 +66,7 @@ export async function render({ query }) {
     Promise.resolve(tab === 'precio' ? priceForm() : myLoads(draw)).then((el) => clear(body).append(el));
   };
   draw();
-  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-10 · pasos 1–7 · A-1 · A-2 · A-3 · E-1 · E-2'));
+  return h('div', { class: 'page' }, pageHeader('Cargar catálogo', { subtitle: 'Precios, comercios y productos cargados a mano', help: HELP.catalog }), tabs, body, steps('CU-10 · pasos 1–6 · A-1 · A-2 · A-3 · E-1 · E-2'));
 }
 
 // ---------- Selector de sucursal ----------
